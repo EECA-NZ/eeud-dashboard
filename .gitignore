@@ -1,0 +1,7 @@
+__pycache__/
+index_files/
+rsconnect-python/
+data/archive/
+app.py
+index.html
+index.ipynb

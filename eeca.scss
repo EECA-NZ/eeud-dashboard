@@ -1,0 +1,222 @@
+/*-- scss:defaults --*/
+
+$primary: #164057;
+$secondary: #CBCDD5; //#9CA2B0;
+$tertiary: #E8ECEE;
+$light: #F8F8F9;
+
+$navbar-bg: $tertiary !default;
+$navbar-fg: $primary !default;
+
+$web-font-path: "https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap";
+@if $web-font-path {
+    @import url("#{$web-font-path}");
+}
+$web-font-path: "https://fonts.googleapis.com/css2?family=Georama:ital,wght@0,100..900;1,100..900&display=swap";
+@if $web-font-path {
+    @import url("#{$web-font-path}");
+}
+
+$font-family-sans-serif: Barlow, sans-serif !default;
+$def-padding: 0.375rem;
+
+body{
+    background-color: $light;
+    font-family: Barlow !important;
+    color: $primary;
+    font-stretch: condensed;
+}
+
+.navbar{
+    //border-bottom: 2px $primary !important;
+    padding-top: 2px !important;
+    box-shadow: 0px 2px inset $primary !important;
+}
+
+.navbar-title {
+    font-size: 1.75rem !important;
+    font-weight: bold !important;
+}
+
+//.navbar-brand-container {
+//    margin-left: $def-padding !important;
+//}
+
+.navbar-logo {
+    filter: invert(1) !important;
+}
+
+#dashboard-collapse {
+    justify-content: flex-end;
+
+    .navbar-nav.me-auto {
+        margin-right: unset !important;
+        margin-right: $def-padding !important;
+    }
+}
+
+.quarto-dashboard .navbar .navbar-nav { 
+
+    li:hover {
+        box-shadow: 0px -2px inset $primary !important;
+        //text-decoration: underline;
+        background-color: $tertiary !important;
+        //border-radius: $def-padding;
+        color: black !important;
+    }
+
+    .active {
+        background-color: $light !important;
+        //border-radius: $def-padding;
+        color: $primary !important;
+    }
+
+    .active:hover {
+        cursor: default !important;
+        text-decoration: none !important;
+    }
+}
+
+
+.navbar-nav li{
+    list-style: none !important;
+    display: inline !important;
+}
+
+.nav-item {
+    font-size: 1.15rem; //1.25rem
+    font-stretch: normal !important;
+    font-weight: 500 !important;
+    .active{
+        background-color: $tertiary !important;
+    }    
+}
+
+
+.dashboard-page {
+    background-color: $light !important;
+}
+
+.card {
+    border: 0px !important;
+}
+
+.card-header {
+    background-color: $tertiary !important; //#E8ECEE
+    color: #164057 !important;
+    font-weight: bold !important;
+    border: 0px !important;
+}
+
+.card-body {
+    background-color: $tertiary !important;
+    border: 0px !important;
+}
+
+.borderless {
+    border: 0px #fbfbfb !important;
+}
+
+.toolbar{
+    background-color: $tertiary !important;
+    border: 0px !important;
+}
+
+.toolbar-bottom {
+    background-color: $light !important;
+}
+
+.bslib-sidebar-layout {
+    .sidebar {
+        background-color: $tertiary !important;
+        border: 0px !important;
+    }   
+}
+
+.value-box-title {
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+}
+
+.value-box-value {
+    font-weight: 1.5rem;
+    font-weight: bold !important;
+}
+
+.value-box-showcase {
+    color: #FF8B83 !important;
+}
+
+.bg-primary {
+    .card-body{
+        background-color: $primary !important;
+    }
+    .value-box-showcase {
+        color: #00B696 !important;
+    }
+}
+
+.flow {
+    .card-body {
+        background-color: $light !important;
+    }
+}
+
+.fill {
+    .card-body {
+        background-color: $light !important;
+    }
+}
+
+.control-label {
+    font-weight: bold !important;
+    font-weight: 1rem !important;
+}
+
+.shiny-options-group {
+    font-weight: normal !important;
+}
+
+.irs {
+    // Add padding around the slider to ensure labels do not get cut off
+    margin: 0 $def-padding !important; // Adjust this value as needed
+}
+
+.irs--shiny .irs-bar,
+.irs--shiny .irs-handle,
+.irs--shiny .irs-single,
+.irs--shiny .irs-from,
+.irs--shiny .irs-to {
+    // Example: Adjusting the background or border for visibility
+    background-color: #164057 !important; // Example color
+    border-color: #164057 !important; // Example border color
+}
+
+//.bslib-sidebar-layout {
+//    position: relative; 
+//}
+
+#explore_download, #chronistic_download, #data_download {
+//    float: center !important;
+//    position: absolute !important;
+//    bottom: 0 !important;
+//    left: 0 !important;
+//    clear: left !important;
+//    margin: 1rem !important; //var(--bs-card-spacer-y) var(--bs-card-spacer-x)
+//    width: 85% !important;
+    width: 100% !important;
+    font-weight: bold !important;
+}
+
+.shiny-input-select, .form-select, .selectize-control, .selectize-input, .selectize-dropdown {
+    background-color: $light !important;
+    border: 5px $primary !important;
+    border-color: $primary !important;
+    border-radius: $def-padding !important;
+    color: black !important;
+
+    .item {
+        color: black !important;
+        background-color: $secondary !important;
+    }
+}

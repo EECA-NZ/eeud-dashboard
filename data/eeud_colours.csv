@@ -1,0 +1,170 @@
+﻿Fuel,Colour
+Wind,#ffc808
+Solar,#00af8c
+Hydro,#49bee5
+Biogas,#00435b
+Electricity,#0086be
+Electric,#0086be
+Geothermal,#4e2e8e
+Hydrogen,#8a73b4
+Wood,#53817a
+Aviation Fuel/Kerosene,#f57e20
+Fuel Oil,#974a21
+Natural Gas,#f0575b
+LPG,#c12025
+Waste Incineration,#6b0d0e
+Diesel,#a7a9ac
+Petrol,#58595b
+Coal,#35373a
+Jet Fuel,#f57e20
+Residential,#d76727
+Commercial,#0086be
+"Agriculture, Forestry and Fishing",#ffc808
+Industrial,#c12025
+Transport,#35373a
+Dairy Cattle Farming,#7A6000
+"Fishing, Hunting and Trapping",#CCA000
+Forestry and Logging,#ffc808
+Accommodation and Food Services,#002D3D
+"Arts, Recreational and Other Services",#003C52
+"Building Cleaning, Pest Control and Other Support Services",#004B66
+Central Government Administration,#005A7A
+Defence,#00698F
+"Education and Training: Pre-School, Primary and Secondary",#0078A3
+Education and Training: Tertiary Education and Other Education,#0087B8
+"Electricity, Gas, Water and Waste Services",#0096CC
+"Financing, Insurance, Real Estate and Business Services",#00A5E0
+Health Care and Social Assistance,#00B4F5
+Information Media and Telecommunications,#17BBF6
+Local Government Administration,#2CC1F7
+Public Administration and Safety,#3FC7F8
+Retail Trade - Food,#50CCF9
+"Transport, Postal and Warehousing",#60D1FA
+"Transport, Postal and Warehousing (Commercial - Non-Transport)",#7BD9FA
+Wholesale and Retail Trade - Non Food,#87DCFA
+Wholesale Trade - Food,#9DE2FB
+Construction,#35090A
+Dairy Product Manufacturing,#460B0D
+"Fabricated Metal Product, Transport Equipment, Machinery and Equipment Manufacturing",#580E11
+Furniture and Other Manufacturing,#691114
+Indoor Cropping,#7B1417
+Meat and Meat Product Manufacturing and Seafood,#8C171B
+Mining,#9E1A1E
+Non-Dairy Agriculture,#AF1D21
+Non-Metallic Mineral Product Manufacturing,#C12025
+Other Food Product Manufacturing,#D32228
+"Petroleum, Basic Chemical and Rubber Product Manufacturing",#DD2C32
+Primary Metal and Metal Product Manufacturing,#E03E43
+Printing,#E25054
+"Pulp, Paper and Converted Paper Product Manufacturing",#E56166
+"Textile, Leather, Clothing and Footwear Manufacturing",#E87377
+Wood Product Manufacturing,#EE9699
+Residential (Private Transport),#d76727
+Heat/Cooling Devices,#00763c
+Mobile Motors,#48bde4
+Stationary Motors,#e23d96
+Electronics and Lights,#654a9e
+Air Compressors,#2C2145
+Cooking Appliances,#3D2E60
+Electronics,#47346F
+Fan Systems,#503B7D
+Fluorescent,#59418B
+Incandescent,#614899
+IT and Entertainment,#8066B7
+LED,#8C74BE
+Lights,#9782C4
+Refiners,#A08DC9
+Boiler Systems,#042213
+Burner (Direct Heat),#06331D
+"Burner, with Wetback",#003D20
+Clothes Dryer,#084427
+Clothes Washers,#00522A
+Cooking Elements,#095430
+Cooking Ovens,#0B6137
+Dishwashers,#006635
+Electric Furnace,#0D7643
+Furnace/Kiln,#00763C
+Gas Water Heater,#0F874D
+Heat Pump (for Cooling),#008F4A
+Heat Pump (for Heating),#119857
+Hot Water Cylinder,#00A354
+HVAC,#13A960
+Industrial Ovens,#00B85F
+Open Fire,#15BA6A
+"Open Fire, with Wetback",#00CC69
+Reformer,#00E074
+Refrigeration Systems,#00F57E
+Resistance Heater,#1FFF93
+Aircraft,#187EA0
+Internal Combustion Engine (Land Transport),#1D9AC3
+Internal Combustion Engine (Sea Transport),#48BDE4
+Locomotive (Rail),#83D2EC
+Electric Motor,#8D1656
+Internal Combustion (Domestic Use),#C21E76
+"Pump Systems (for Fluids, etc.)",#E13C95
+Stationary Engine,#E972B1
+Heating,#00763c
+Heating/Cooling,#00763c
+Cooling,#2A4845
+Mobile Motive Power,#48bde4
+Stationary Motive Power,#e23d96
+Electronics and Lighting,#654a9e
+Iron and Steel,#414042
+Fans,#503B7D
+Irrigation,#614899
+Lighting,#7459B1
+Pumping,#8C74BE
+"High Temperature Heat (>300 C), Process Requirements",#042213
+"Intermediate Heat (100-300 C), Cooking",#06331D
+"Intermediate Heat (100-300 C), Process Requirements",#095430
+"Low Temperature Heat (< 100 C), Dishwashers",#006635
+"Low Temperature Heat (<100 C), Clothes Drying",#00763C
+"Low Temperature Heat (<100 C), Clothes Washing",#008F4A
+"Low Temperature Heat (<100 C), Process Requirements",#00A354
+"Low Temperature Heat (<100 C), Space Heating",#00B85F
+"Low Temperature Heat (<100 C), Water Heating",#00CC69
+Refrigeration,#00E074
+Space Cooling,#00F57E
+Iron and Steel Manufacturing,#414042
+"Motive Power, Mobile",#13627C
+"Motive Power, Stationary",#e23d96
+Unallocated,#a7a9ac
+Fossil Fuels,#414042
+Renewables,#8dd2c0
+unallocated,#a7a9ac
+Compressed Air,#2A4845
+Electronics and Other Electrical Uses,#d8d1e8
+Industrial - Unallocated,#fabec0
+Fossil Fuels (direct use),#414042
+Renewables (direct use),#8dd2c0
+Electricity  (direct use),#0086be
+Light Passenger Vehicle,#53817a
+Light Commercial Vehicle,#00435b
+Very Heavy Truck,#4e2e8e
+Heavy Truck,#c12025
+Plane,#f57e20
+Medium Truck,#35373a
+Bus,#974a21
+Ship,#f0575b
+Freight Rail,#d76727
+Motorcycle,#6b0d0e
+Passenger Rail,#a7a9ac
+Internal Combustion Engine,#58595b
+Conventional Hybrid Vehicle,#ffc808
+Plug-In Hybrid Vehicle,#f57e20
+Electric Motor (Rail),#8a73b4
+Battery Electric Vehicle,#0086be
+Road Transport,#1D9AC3
+Air Transport,#187EA0
+Commercial Unallocated,#a7a9ac
+Sea Transport,#83D2EC
+Rail Transport,#48BDE4
+Industrial Unallocated (Residual),#a7a9ac
+"Agriculture, Forestry and Fishing Unallocated",#a7a9ac
+Residential Unallocated,#a7a9ac
+Unallocated Technology Group,#a7a9ac
+Unallocated Technology,#a7a9ac
+Unallocated End Use Group,#a7a9ac
+Unallocated End Use,#a7a9ac
+Ship Engine,#006635
+Plane Engine,#E56166

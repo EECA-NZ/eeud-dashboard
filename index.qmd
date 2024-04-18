@@ -5,6 +5,8 @@ format:
   dashboard:
     theme: "eeca.scss"
     expandable: false
+    includes:
+      in_header: google-analytics.html
 server: shiny
 ---
 

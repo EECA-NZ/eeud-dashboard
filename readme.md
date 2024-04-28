@@ -6,7 +6,7 @@ This is a dashboard for EECA's Energy End-Use Database, built with Quarto and Sh
 
 Note: This readme is a work in progress, and will be fleshed out further.
 
-## How to install and run the dashboard
+## How to install and run the dashboard locally
 
 There are two things you will need to run the dashboard: Quarto and Python. This readme will assume the latter is already installed through Anaconda.
 
@@ -22,19 +22,22 @@ At the time of writing, [shinyapps.io only supports python 3.7.13, 3.8.13, 3.9.1
 
 ## How to deploy the dashboard
 
-We can deploy our dashboard to shinyapps.io using the `rsconnect-python` package that has been installed to our Python environment from our requirements. This requires some setup to connect our environment to EECA's shinyapps.io portal. Please follow the instructions on [this Posit docs page](https://docs.posit.co/shinyapps.io/getting-started.html#deploying-applications-1) to get set up with `rsconnect`.
+Deployment to shinyapps.io is done via Github actions. 
 
-In EECA's shinyapps.io portal, you can find the application id for the existing eeud_dashboard_quarto application. We can use this application id to deploy our dashboard to this application.
+**Dev:** deployment occurs on any push to `main` branch.
 
-* **Deploy** to an existing application `rsconnect deploy shiny . -n eeca-nz -a 11701768`.
+**Prod:** deployment occurs on any release tag that matches the pattern `v*.*.*`.
 
-Note: If an application does not exist, or you would like to deploy the dashboard to a new application in the portal, you can deploy it with `rsconnect deploy shiny . -n eeca-nz -t "APPLICATION NAME HERE"`
+### Updating deployment secrets
+A user with access to EECA's shinyapps.io portal and the settings for this repo can update the Github secrets as needed.
 
-## Potential issues
+See the instructions on [this Posit docs page](https://docs.posit.co/shinyapps.io/getting-started.html#deploying-applications-1) to get `rsconnect` token information.
 
-In the creation of deployment of this dashboard, a number of difficulties were encountered that may also be encountered by others attempting to run this dashboard.
+### Potential deployment issues
 
-* ***Permission Errors.*** Python runtime packages such as `shiny` or `rsconnect` may sometimes not work due to "access denied" permission complications. The cause of this has not been entirely ascertained, as the occurence of this complication has been inconsistent, and it may decide to work or break within a single terminal instance depending on any number of unknowable variables, up to and including the whims of the cosmos.
+In the testing of deployment of this dashboard, a number of difficulties were encountered that may also be encountered by others attempting to run this dashboard.
+
+* ***Permission Errors.*** Python runtime packages such as `shiny` or `rsconnect` may sometimes not work due to "access denied" permission complications. The cause of this has not been entirely ascertained, as the occurence of this complication has been inconsistent. Try and rerun the action manually to resolve this.
 * ***Package Versioning.*** When deploying the dashboard to shinyapps.io, a number of problems can arise due to python package versioning, as shinyapps will be constructing its own virtual environment based on our requirements.txt. The current requirements.txt will see a successful deployment, so ammendments to this may require some trial-and-error.
     * Initially `pip freeze` was used to create the requirements.txt, however this created problems for shinyapps' virtual environment. After removing version restrictions from the list of packages as initially included by freezing proved more successful, however shinyapps's environment defaulted to installing a few packages with older versions than was required by the dashboard (notably the `shiny` and `shinywidgets` packages). Restoring version restrictions to just these necessary packages allowed for a successful deployment.
     * If additional packages are required to be installed for the dashboard going forward, the suggestion would be to manually add these to the requirements.txt without version restrictions, and to only add version restrictions if necessary.

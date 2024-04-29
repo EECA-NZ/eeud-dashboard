@@ -37,7 +37,7 @@ See the instructions on [this Posit docs page](https://docs.posit.co/shinyapps.i
 ### Creating a new app
 Easiest way to is to build and then deploy manually
 ```bash
-rsconnect deploy shiny . -n eeca-nz -t "APPLICATION NAME HERE"
+rsconnect deploy shiny . -n "ACCOUNT NAME HERE" -t "APPLICATION NAME HERE"
 ```
 
 ### Potential deployment issues

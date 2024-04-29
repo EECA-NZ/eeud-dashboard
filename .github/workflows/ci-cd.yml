@@ -49,15 +49,14 @@ jobs:
 
          - name: Deploy to Development or Production
            run: |
-              if [[ "${GIT_REF}" == "refs/tags/v*" ]]; then
-                echo "Deploying to production"
-                rsconnect deploy shiny . -n $SHINYAPPS_NAME -a $PROD_APP_ID -V public
+              if [[ ${GITHUB_REF_TYPE} == "tag" && "${GITHUB_REF_NAME}" == "v*" ]]; then
+                echo "Deploying to production app $PROD_APP_ID"
+                rsconnect deploy shiny . -n "$SHINYAPPS_NAME" -a "$PROD_APP_ID" -E "$GITHUB_REF_NAME"
               else
-                echo "Deploying to development"
-                rsconnect deploy shiny . -n $SHINYAPPS_NAME -a $DEV_APP_ID -V private
+                echo "Deploying to development app $DEV_APP_ID"
+                rsconnect deploy shiny . -n "$SHINYAPPS_NAME" -a "$DEV_APP_ID" -V "private"
               fi
            env:
-              GIT_REF: ${{ github.ref }}
               SHINYAPPS_NAME: ${{ secrets.SHINYAPPS_NAME }}
               PROD_APP_ID: ${{ secrets.PROD_APP_ID }}
               DEV_APP_ID: ${{ secrets.DEV_APP_ID }}

@@ -34,6 +34,12 @@ A user with access to EECA's shinyapps.io portal and the settings for this repo 
 
 See the instructions on [this Posit docs page](https://docs.posit.co/shinyapps.io/getting-started.html#deploying-applications-1) to get `rsconnect` token information.
 
+### Creating a new app
+Easiest way to is to build and then deploy manually
+```bash
+rsconnect deploy shiny . -n eeca-nz -t "APPLICATION NAME HERE"
+```
+
 ### Potential deployment issues
 
 In the testing of deployment of this dashboard, a number of difficulties were encountered that may also be encountered by others attempting to run this dashboard.

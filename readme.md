@@ -35,9 +35,11 @@ A user with access to EECA's shinyapps.io portal and the settings for this repo 
 See the instructions on [this Posit docs page](https://docs.posit.co/shinyapps.io/getting-started.html#deploying-applications-1) to get `rsconnect` token information.
 
 ### Creating a new app
+
 Easiest way to is to build and then deploy manually
+
 ```bash
-rsconnect deploy shiny . -n "ACCOUNT NAME HERE" -t "APPLICATION NAME HERE"
+rsconnect deploy shiny . -n "ACCOUNT NAME HERE" -t "APPLICATION NAME HERE" -N
 ```
 
 ### Potential deployment issues

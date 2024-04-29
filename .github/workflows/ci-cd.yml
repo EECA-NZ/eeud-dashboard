@@ -51,10 +51,15 @@ jobs:
            run: |
               if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" == "v*" ]]; then
                 echo "Deploying to production app $PROD_APP_ID"
-                rsconnect deploy shiny . -n "$SHINYAPPS_NAME" -a "$PROD_APP_ID" -E "$GITHUB_REF_NAME"
+                rsconnect deploy shiny . \
+                  --name "$SHINYAPPS_NAME" \
+                  --app-id "$PROD_APP_ID"
               else
                 echo "Deploying to development app $DEV_APP_ID"
-                rsconnect deploy shiny . -n "$SHINYAPPS_NAME" -a "$DEV_APP_ID" -V "private"
+                rsconnect deploy shiny . \
+                  --name  "$SHINYAPPS_NAME" \
+                  --app-id "$DEV_APP_ID" \
+                  --visibility "private"
               fi
            env:
               SHINYAPPS_NAME: ${{ secrets.SHINYAPPS_NAME }}

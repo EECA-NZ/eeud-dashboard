@@ -49,7 +49,7 @@ jobs:
 
          - name: Deploy to Development or Production
            run: |
-              if [[ "${GITHUB_REF_TYPE}"" == "tag" && "${GITHUB_REF_NAME}" == "v*" ]]; then
+              if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" == "v*" ]]; then
                 echo "Deploying to production app $PROD_APP_ID"
                 rsconnect deploy shiny . -n "$SHINYAPPS_NAME" -a "$PROD_APP_ID" -E "$GITHUB_REF_NAME"
               else

@@ -1,4 +1,4 @@
-[![CI/CD](https://github.com/EECA-NZ/eeud-dashboard/actions/workflows/ci-cd.yml/badge.svg?branch=main&event=deployment)](https://github.com/EECA-NZ/eeud-dashboard/actions/workflows/ci-cd.yml)
+[![CI/CD](https://github.com/EECA-NZ/eeud-dashboard/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/EECA-NZ/eeud-dashboard/actions/workflows/ci-cd.yml)
 
 # Energy End-Use Database Dashboard
 

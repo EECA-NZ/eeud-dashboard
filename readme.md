@@ -2,7 +2,7 @@
 
 This is a dashboard for EECA's Energy End-Use Database, built with Quarto and Shiny for Python. Quarto provides the dashboard's document structure and layout, and Shiny provides the dashboard's interactivity.  This dashboard is deployed as an interactive application to EECA's shinyapps.io space.
 
-[Live Dashboard]()
+[Live Dashboard](https://eeca-nz.shinyapps.io/eeud_dashboard_quarto/)
 
 Note: This readme is a work in progress, and will be fleshed out further.
 

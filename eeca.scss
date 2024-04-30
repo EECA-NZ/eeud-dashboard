@@ -103,7 +103,7 @@ body{
 
 .card-header {
     background-color: $tertiary !important; //#E8ECEE
-    color: #164057 !important;
+    color: $primary !important;
     font-weight: bold !important;
     border: 0px !important;
 }
@@ -188,8 +188,8 @@ body{
 .irs--shiny .irs-from,
 .irs--shiny .irs-to {
     // Example: Adjusting the background or border for visibility
-    background-color: #164057 !important; // Example color
-    border-color: #164057 !important; // Example border color
+    background-color: $primary !important; // Example color
+    border-color: $primary !important; // Example border color
 }
 
 //.bslib-sidebar-layout {
@@ -218,5 +218,12 @@ body{
     .item {
         color: black !important;
         background-color: $secondary !important;
+    }
+}
+
+table {
+	border-collapse: collapse;
+    th, td {
+        border: 1px solid $secondary;
     }
 }

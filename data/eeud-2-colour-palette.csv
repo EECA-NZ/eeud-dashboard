@@ -1,0 +1,146 @@
+﻿Fuel,Colour
+Renewables,#41B496
+Electricity,#164057
+Fossil Fuels,#E94E24
+Electricity,#425970
+Av. Fuel/Kero,#eb5e36
+Coal,#ee6f48
+Diesel,#f07f5a
+Fuel Oil,#f28f6d
+LPG,#f49f7f
+Natural Gas,#f7b091
+Petrol,#f9c0a3
+Biogas,#58c0a6
+Geothermal,#70cbb6
+Solar,#87d6c6
+Wood,#9ee2d6
+Residential,#41B496
+Commercial,#164057
+"Agriculture, Forestry and Fishing",#3C4C49
+Industrial,#E94E24
+Transport,#447474
+Dairy Cattle Farming,#515f5c
+"Fishing, Hunting and Trapping",#65716f
+Forestry and Logging,#7a8481
+Indoor Cropping,#8e9694
+Non-Dairy Agriculture,#a3a9a7
+Accommodation and Food Services,#1f475d
+"Arts, Recreational and Other Services",#284d63
+"Building Cleaning, Pest Control and Other Support Services",#315469
+Defence,#3a5a6f
+"Education and Training: Pre-School, Primary and Secondary",#436175
+Education and Training: Tertiary Education and Other Education,#4c677b
+"Financing, Insurance, Real Estate and Business Services",#556e81
+Health Care and Social Assistance,#5d7486
+Information Media and Telecommunications,#667b8c
+Local Government Administration,#6f8192
+Public Administration and Safety,#788898
+Retail Trade - Food,#818e9e
+"Transport, Postal and Warehousing (Commercial - Non-Transport)",#8a95a4
+Wholesale Trade - Food,#939baa
+Wholesale and Retail Trade - Non Food,#9ca2b0
+Construction,#ea552c
+Dairy Product Manufacturing,#eb5c34
+"Electricity, Gas, Water and Waste Services",#ec633c
+"Fabricated Metal Product, Transport Equipment, Machinery and Equipment Manufacturing",#ed6a44
+"Food and Beverage Product Manufacturing (excluding Dairy, Meat, Seafood)",#ee724c
+Furniture and Other Manufacturing,#ef7954
+Industrial - Unallocated,#f0805c
+Meat and Meat Product Manufacturing and Seafood,#f18763
+Mining,#f28e6b
+Non-Metallic Mineral Product Manufacturing,#f39573
+"Petroleum, Basic Chemical and Rubber Product Manufacturing",#f49c7b
+Primary Metal and Metal Product Manufacturing,#f5a383
+Printing,#f6ab8b
+"Pulp, Paper and Converted Paper Product Manufacturing",#f7b293
+"Textile, Leather, Clothing and Footwear Manufacturing",#f8b99b
+Wood Product Manufacturing,#f9c0a3
+Residential,#00C4AB
+Air Transport,#5e8788
+Rail Transport,#779a9b
+Road Transport,#90aeae
+Sea Transport,#aac1c2
+Bus,#447474
+Freight Rail,#447474
+Heavy Truck,#447474
+Light Commercial Vehicle,#447474
+Light Passenger Vehicle,#447474
+Medium Truck,#447474
+Motorcycle,#447474
+Passenger Rail,#447474
+Plane,#447474
+Ship,#447474
+Very Heavy Truck,#447474
+Heat/Cooling Devices,#41B496
+Mobile Motors,#E94E24
+Stationary Motors,#ED6D63
+Electronics and Lights,#164057
+Air Compressors,#234a60
+Electronics,#315469
+Fan Systems,#3e5d72
+Fluorescent,#4c677b
+IT and Entertainment,#597184
+Incandescent/Halogen,#667b8c
+Irrigation,#748595
+LED,#818e9e
+Lights,#8f98a7
+Refiners,#9ca2b0
+Boiler Systems,#45b699
+Burner (Direct Heat),#49b89c
+"Burner, with Wetback",#4eba9f
+Clothes Dryer,#52bca2
+Clothes Washers,#56bea5
+"Coal Heaters, Residential Only  ",#5ac1a7
+"Cooking Appliances, Residential Only (Cooktops/Microwaves/Ovens/Uprights)  ",#5fc3aa
+Cooking Elements,#63c5ad
+Cooking Ovens,#67c7b0
+Dishwashers,#6bc9b3
+Electric Furnace,#70cbb6
+Furnace/Kiln,#74cdb9
+Gas Water Heater,#78cfbc
+HVAC,#7cd1bf
+Heat Pump (for Cooling),#80d3c2
+Heat Pump (for Heating),#85d5c5
+Hot Water Cylinder,#89d8c7
+Industrial Ovens,#8ddaca
+"Misc, Residential Only (Battery chargers, Pools, Pumps)  ",#91dccd
+Reformer,#96ded0
+Refrigeration Systems,#9ae0d3
+Resistance Heater,#9ee2d6
+Internal Combustion Engine (Land Transport),#ef7649
+Internal Combustion Engine (Recreational Marine)  ,#f49c75
+Internal Combustion Engine (Sea Transport),#f9c0a3
+Electric Motor,#ff8b83
+"Pump Systems (for Fluids, etc.)",#ffa9a3
+Stationary Engine,#ffc6c2
+Battery Electric Vehicle,#588384
+Conventional Hybrid Vehicle,#6d9393
+Internal Combustion Engine,#81a2a3
+Plug-In Hybrid Vehicle,#96b2b2
+Turbine Engine,#aac1c2
+Heating/Cooling,#41B496
+Mobile Motive Power,#E94E24
+Stationary Motive Power,#ED6D63
+Electronics and Lighting,#164057
+Iron and Steel,#3C4C49
+Compressed Air,#2c5066
+Electronics and Other Electrical Uses,#436175
+Fans,#597184
+Irrigation,#6f8192
+Lighting,#8692a1
+Refiners,#9ca2b0
+"High Temperature Heat (>300 C), Process Requirements",#49b89c
+"Intermediate Heat (100-300 C), Cooking",#52bca2
+"Intermediate Heat (100-300 C), Process Requirements",#5ac1a7
+"Low Temperature Heat (< 100 C), Dishwashers",#63c5ad
+"Low Temperature Heat (<100 C), Clothes Drying",#6bc9b3
+"Low Temperature Heat (<100 C), Clothes Washing",#74cdb9
+"Low Temperature Heat (<100 C), Process Requirements",#7cd1bf
+"Low Temperature Heat (<100 C), Space Heating",#85d5c5
+"Low Temperature Heat (<100 C), Water Heating",#8ddaca
+Refrigeration,#96ded0
+Space Cooling,#9ee2d6
+Iron and Steel Manufacturing,#536662
+"Motive Power, Mobile",#ef7649
+"Motive Power, Stationary",#FF8B83
+Pumping,#ffa9a3

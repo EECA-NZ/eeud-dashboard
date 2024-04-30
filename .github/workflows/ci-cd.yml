@@ -61,6 +61,7 @@ jobs:
                   --name  "$SHINYAPPS_NAME" \
                   --app-id "$DEV_APP_ID" \
                   --visibility "private"
+                  --new
               fi
            env:
               SHINYAPPS_NAME: ${{ secrets.SHINYAPPS_NAME }}

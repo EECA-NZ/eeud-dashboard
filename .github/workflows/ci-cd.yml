@@ -54,6 +54,7 @@ jobs:
                 rsconnect deploy shiny . \
                   --name "$SHINYAPPS_NAME" \
                   --app-id "$PROD_APP_ID"
+                  --new
               else
                 echo "Deploying to development app $DEV_APP_ID"
                 rsconnect deploy shiny . \

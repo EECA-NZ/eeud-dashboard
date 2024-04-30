@@ -33,7 +33,7 @@ jobs:
 
          - name: Run the app
            run: |
-              timeout 10s shiny run app.py
+              timeout 10s shiny run app.py || ( [[ $? -eq 124 ]] )
 
          - name: Configure deployment tool
            run: |

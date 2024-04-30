@@ -23,17 +23,11 @@ import random
 from datetime import date
 import numpy as np
 
-#import logging
-#logger = logging.getLogger()
-#logging.basicConfig(level=logging.INFO)
-#logger.info('Custom Log Message.')
-
 eeud = pd.read_csv('./data/EEUD-03042024.csv').set_index('Row')
 eeud['PeriodEndDate'] = pd.to_datetime(eeud['PeriodEndDate'])
 eeud_colours = pd.read_csv('./data/eeud-2-colour-palette.csv', index_col=0, header=0, dtype=str).squeeze("columns")
 eeud_colours = eeud_colours[~eeud_colours.index.duplicated()]
-
-#eeud_colours = eeud_colours.apply(lambda x: f"#{x}" if '#' not in x else x)
+# eeud_colours = eeud_colours.apply(lambda x: f"#{x}" if '#' not in x else x)
 
 sector_groups_list = list(eeud['SectorGroup'].sort_values().unique())
 sectors_list = list(eeud['Sector'].sort_values().unique())
@@ -166,11 +160,9 @@ def create_alluvial_links_for_dict(df, category_column, date_column, date_freq='
 ### Column {width=60%}
 
 #### Row {.toolbar}
-
 ```{python}
 ui.input_select("highlight_category", "Highlight", choices=["End Use", "Fuel", "Sector", "Technology"], selected="Fuel")
 ```
-
 <p style="align-content: flex-end; font-size: 1rem; padding-top: 1rem; line-height: 0px;">Values presented for 2022</p>
 
 #### Row
@@ -193,14 +185,8 @@ def display_overview_energy_use():
         color=group,
         color_discrete_map=eeud_colours.to_dict()
     )
-
-    fig.update_traces(marker=dict(line=dict(color='rgba(232,236,238,255)', width=1)))  # Adjust 'width' as needed for visibility
+    fig.update_traces(marker=dict(line=dict(color='rgba(232,236,238,255)', width=1)))
     
-    #fig.update_traces(
-    #    marker_colors=[eeud_colours[c] for c in pd.factorize(fig.data[0].labels)[0]],
-    #    leaf_opacity=1,
-    #)
-
     fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoscale'])
     fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
@@ -211,7 +197,6 @@ def display_overview_energy_use():
 ### Column {width=40%}
 
 #### Row
-
 ```{python}
 #| content: valuebox
 #| title: "Total Energy Use 2022 (TJ)"
@@ -224,7 +209,6 @@ dict(
 ```
 
 #### Row {height=50%}
-
 ```{python}
 @render.ui
 def largest_use():
@@ -246,18 +230,9 @@ def largest_use():
         theme="secondary",
         showcase_layout="left center",
     )
-
-#category = 'Fuel' #title_case(input.highlight_category())
-#dict(
-#    title = "Test",
-#    icon = "star",
-#    color = "secondary",
-#    value = eeud.groupby(category)['TJ'].sum().idxmax()
-#)
 ```
 
 ```{python}
-
 @render.ui
 def extra_valuebox():
     return ui.value_box(
@@ -275,7 +250,6 @@ def extra_valuebox():
 ```
 
 #### Row {height=50%}
-
 ```{python}
 @render.ui
 def largest_increase():
@@ -298,17 +272,9 @@ def largest_increase():
         theme="secondary",
         showcase_layout="left center",
     )
-
-#dict(
-#    icon = "graph-up-arrow",
-#    color = "secondary",
-#    value = max_growth
-#)
-
 ```
 
 ```{python}
-
 @render.ui
 def largest_decrease():
     category = title_case(input.highlight_category())
@@ -330,24 +296,13 @@ def largest_decrease():
         theme="secondary",
         showcase_layout="left center",
     )
-
-
-#dict(
-#    icon = "graph-down-arrow",
-#    color = "secondary",
-#    value = min_growth
-#)
 ```
 
-
 ## Row
-
 ```{python}
 #| title: Energy Usage Trend
-
 @render_widget
 def display_overview_energy_trend():
-
     category = title_case(input.highlight_category())
     group = category + "Group"
     eeud_subset = eeud[~pd.isna(eeud[category])]
@@ -363,56 +318,6 @@ def display_overview_energy_trend():
         y='TJ', x='Period', color=group, color_discrete_map=eeud_colours.to_dict(),
         markers=True).update_xaxes(dtick=1)
     fig.update_layout(yaxis=dict(title=f"Total Energy Usage (TJ)"))
-
-    # Create an area chart for the total TJ on the primary y-axis
-    #fig = px.area(
-    #    total_tj_by_period,
-    #    x='Period',
-    #    y='TotalTJ',
-    #    labels={'TotalTJ': 'Total Energy Usage'}
-    #)
-
-    #fig.data[0].fillcolor = 'rgba(22, 64, 87, 0.1)'
-    #fig.data[0].line.color = 'rgba(22, 64, 87, 0.0)'
-
-    # Define a secondary y-axis for the proportional data
-    #fig.update_layout(
-    #    yaxis=dict(
-    #        title='Total Energy Usage (Area)',
-    #        range=[math.ceil((min(total_tj_by_period['TotalTJ']) / 1.5)/50000.0)*50000.0, math.ceil((max(total_tj_by_period#['TotalTJ']))/50000.0)*50000.0]
-    #    ),
-    #    yaxis2=dict(
-    #        title='Proportional Energy Usage (Lines)',
-    #        overlaying='y',
-    #        side='right',
-    #        showgrid=False  # Optional: Turn off grid lines for secondary y-axis
-    #    )
-    #)
-
-    # Step 7: Add line plots of the proportions using the secondary y-axis
-    #for name, group in merged.groupby(group):
-    #    # Add glow effect (white line behind the main line)
-    #    fig.add_trace(
-    #        go.Scatter(
-    #            x=group['Period'],
-    #            y=group['TJ_Proportion'],
-    #            mode='lines+markers',
-    #            line=dict(color='#E8ECEE', width=6),  # White line wider than the main line
-    #            yaxis='y2',
-    #            showlegend=False  # Do not show this in the legend
-    #        )
-    #    )
-    #    # Add main line trace
-    #    fig.add_trace(
-    #        go.Scatter(
-    #            x=group['Period'],
-    #            y=group['TJ_Proportion'],
-    #            mode='lines+markers',
-    #            name=name,
-    #            line=dict(color=eeud_colours.get(name, '#000000'), width=2),  # Main line color and width
-    #            yaxis='y2'
-    #        )
-    #    )
     
     fig.update_layout(legend=dict(
         orientation="h",
@@ -423,7 +328,6 @@ def display_overview_energy_trend():
     fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
     return fig
-
 ```
 
 # Overview 1
@@ -433,7 +337,6 @@ def display_overview_energy_trend():
 ### Column {width=40%}
 
 #### Row {.toolbar}
-
 ```{python}
 ui.input_select("treemap_category", "Highlight", choices=["End Use", "Fuel", "Sector", "Technology"], selected="Sector")
 ```
@@ -480,13 +383,10 @@ dict(
 ```
 
 ### Column {width=60%}
-
 ```{python}
 #| title: Energy Usage Trend
-
 @render_widget
 def display_old_category_trend():
-
     category = title_case(input.treemap_category())
     group = category + "Group"
     eeud_subset = eeud[~pd.isna(eeud[category])].copy()
@@ -515,12 +415,10 @@ def display_old_category_trend():
 ```
 
 ## Row {height=60%}
-
 ```{python}
 #| title: Treemap
 @render_widget
 def display_treemap():
-
     # Aggregate EnergyValue by Group and Category.
     category = title_case(input.treemap_category())
     group = category + "Group"
@@ -569,13 +467,11 @@ def display_treemap():
 
 ```
 
-
 # Explore
 
 ## Row
 
 ### Column {.sidebar}
-
 <h5>Display</h5>
 
 ```{python}
@@ -744,8 +640,8 @@ def display_explore_chart():
 <h5>Display</h5>
 
 ```{python}
-ui.input_select("chronistic_category", "Category", choices=["End Use", "End Use Group", "Fuel", "Fuel Group", "Sector", "Sector Group", "Technology", "Technology Group"], selected="Fuel")
-ui.input_select("chronistic_display", "Values", choices=["Total", "Proportional"], selected="Total")
+ui.input_select("timeseries_category", "Category", choices=["End Use", "End Use Group", "Fuel", "Fuel Group", "Sector", "Sector Group", "Technology", "Technology Group"], selected="Fuel")
+ui.input_select("timeseries_display", "Values", choices=["Total", "Proportional"], selected="Total")
 ```
 
 <br/>
@@ -753,28 +649,28 @@ ui.input_select("chronistic_display", "Values", choices=["Total", "Proportional"
 
 ```{python}
 
-ui.input_selectize('chronistic_sectors', "Sector", sectors_list, multiple=True,
+ui.input_selectize('timeseries_sectors', "Sector", sectors_list, multiple=True,
     options={
         'placeholder': "All Sectors",
         'plugins': ['clear_button']
     }
 )
 
-ui.input_selectize('chronistic_fuels', "Fuel Type", fuels_list, multiple=True, 
+ui.input_selectize('timeseries_fuels', "Fuel Type", fuels_list, multiple=True, 
     options={
         'placeholder': "All Fuel Types",
         'plugins': ['clear_button']
     }
 )
 
-ui.input_selectize('chronistic_technologies', "Technology", technologies_list, multiple=True,
+ui.input_selectize('timeseries_technologies', "Technology", technologies_list, multiple=True,
     options={
         'placeholder': "All Technologies",
         'plugins': ['clear_button']
     }
 )
 
-ui.input_selectize('chronistic_end_use', "End Use", end_uses_list, multiple=True,
+ui.input_selectize('timeseries_end_use', "End Use", end_uses_list, multiple=True,
     options={
         'placeholder': "All End Uses",
         'plugins': ['clear_button']
@@ -782,20 +678,20 @@ ui.input_selectize('chronistic_end_use', "End Use", end_uses_list, multiple=True
 )
 
 @reactive.Calc
-def chronistic_eeud_filtered():
+def timeseries_eeud_filtered():
     data = eeud.copy()
 
-    if len(input.chronistic_sectors()) > 0:
-        data = data[data['Sector'].isin(input.chronistic_sectors())]
+    if len(input.timeseries_sectors()) > 0:
+        data = data[data['Sector'].isin(input.timeseries_sectors())]
 
-    if len(input.chronistic_fuels()) > 0:
-        data = data[data['Fuel'].isin(input.chronistic_fuels())]
+    if len(input.timeseries_fuels()) > 0:
+        data = data[data['Fuel'].isin(input.timeseries_fuels())]
 
-    if len(input.chronistic_technologies()) > 0:
-        data = data[data['Technology'].isin(input.chronistic_technologies())]
+    if len(input.timeseries_technologies()) > 0:
+        data = data[data['Technology'].isin(input.timeseries_technologies())]
 
-    if len(input.chronistic_end_use()) > 0:
-        data = data[data['EndUse'].isin(input.chronistic_end_use())]
+    if len(input.timeseries_end_use()) > 0:
+        data = data[data['EndUse'].isin(input.timeseries_end_use())]
 
     return data
 ```
@@ -805,10 +701,10 @@ def chronistic_eeud_filtered():
 
 ```{python}
 @render.download(
-    filename=lambda: f"chronistic-{date.today().isoformat()}-{np.random.randint(100, 999)}.csv"
+    filename=lambda: f"timeseries-{date.today().isoformat()}-{np.random.randint(100, 999)}.csv"
 )
-async def download_chronistic_filtered_data():
-    data = chronistic_eeud_filtered()  # Ensure that this fetch is thread-safe or handled correctly within the async context
+async def download_timeseries_filtered_data():
+    data = timeseries_eeud_filtered()  # Ensure that this fetch is thread-safe or handled correctly within the async context
     csv_data = data.to_csv(index=False)
     await asyncio.sleep(0.25)  # Simulating some processing time
     yield csv_data
@@ -820,71 +716,59 @@ async def download_chronistic_filtered_data():
 ```{python}
 #| content: card-toolbar
 
-#@render.ui
-#def render_chronistic_alluvial_button():
-#    btn_class = 'btn-primary' if chronistic_chart_type.get() == 'Alluvial' else 'btn-secondary'
-#    return ui.input_action_button("chronistic_alluvial", "Alluvial Chart", class_=btn_class)
+@render.ui
+def render_timeseries_area_button():
+    btn_class = 'btn-primary' if timeseries_chart_type.get() == 'Area' else 'btn-secondary'
+    return ui.input_action_button("timeseries_area", "Area Chart", class_=btn_class)
 
 @render.ui
-def render_chronistic_area_button():
-    btn_class = 'btn-primary' if chronistic_chart_type.get() == 'Area' else 'btn-secondary'
-    return ui.input_action_button("chronistic_area", "Area Chart", class_=btn_class)
-
-@render.ui
-def render_chronistic_line_button():
-    btn_class = 'btn-primary' if chronistic_chart_type.get() == 'Line' else 'btn-secondary'
-    return ui.input_action_button("chronistic_line", "Line Chart", class_=btn_class)
-
-
-#@reactive.effect
-#def set_chronistic_alluvial_chart():
-#    input.chronistic_alluvial()
-#    with reactive.isolate():
-#        chronistic_chart_type.set('Alluvial')
+def render_timeseries_line_button():
+    btn_class = 'btn-primary' if timeseries_chart_type.get() == 'Line' else 'btn-secondary'
+    return ui.input_action_button("timeseries_line", "Line Chart", class_=btn_class)
 
 @reactive.effect
-def set_chronistic_area_chart():
-    input.chronistic_area()
+def set_timeseries_area_chart():
+    input.timeseries_area()
     with reactive.isolate():
-        chronistic_chart_type.set('Area')
+        timeseries_chart_type.set('Area')
 
 @reactive.effect
-def set_chronistic_line_chart():
-    input.chronistic_line()
+def set_timeseries_line_chart():
+    input.timeseries_line()
     with reactive.isolate():
-        chronistic_chart_type.set('Line')
+        timeseries_chart_type.set('Line')
 
 ```
 
 ```{python}
 #| title: Energy Usage Time Series
- 
-chronistic_chart_type = reactive.value('Line')
+
+timeseries_chart_type = reactive.value('Line')
 
 @render_widget
-def display_chronistic_chart():
-    category = title_case(input.chronistic_category())
-    chronistic_df = chronistic_eeud_filtered().groupby([category, 'Period']).sum(numeric_only=True).reset_index(drop=False)
-    if input.chronistic_display() == "Proportional":
-        total_tj_by_period = chronistic_df.groupby('Period')['TJ'].sum().reset_index(name='TotalTJ')
-        chronistic_df = pd.merge(chronistic_df, total_tj_by_period, on='Period')
-        chronistic_df['TJ_Proportion'] = chronistic_df['TJ'] / chronistic_df['TotalTJ']
+def display_timeseries_chart():
+    category = title_case(input.timeseries_category())
+    timeseries_df = timeseries_eeud_filtered().groupby([category, 'Period']).sum(numeric_only=True).reset_index(drop=False)
+    if input.timeseries_display() == "Proportional":
+        total_tj_by_period = timeseries_df.groupby('Period')['TJ'].sum().reset_index(name='TotalTJ')
+        timeseries_df = pd.merge(timeseries_df, total_tj_by_period, on='Period')
+        timeseries_df['TJ_Proportion'] = timeseries_df['TJ'] / timeseries_df['TotalTJ']
 
-    if chronistic_chart_type.get() == 'Alluvial':
-        chronistic_links, chronistic_nodes = create_alluvial_links_for_dict(chronistic_eeud_filtered(), category, 'PeriodEndDate')
+    if timeseries_chart_type.get() == 'Alluvial':
+        timeseries_links, timeseries_nodes = create_alluvial_links_for_dict(timeseries_eeud_filtered(), category, 'PeriodEndDate')
         fig = go.Figure(data=[go.Sankey(
             node = dict(
                 pad = 15,
                 thickness = 20,
                 line = dict(width = 0),
-                label = chronistic_nodes['label'],
-                color = chronistic_nodes['color']
+                label = timeseries_nodes['label'],
+                color = timeseries_nodes['color']
                 ),
             link = dict(
-                source = chronistic_links['source'],
-                target = chronistic_links['target'],
-                value = chronistic_links['value'],
-                color = chronistic_links['color']
+                source = timeseries_links['source'],
+                target = timeseries_links['target'],
+                value = timeseries_links['value'],
+                color = timeseries_links['color']
                 )
         )])
         fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoscale'])
@@ -892,11 +776,11 @@ def display_chronistic_chart():
         fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
         return fig
 
-    elif chronistic_chart_type.get() == 'Line':
-        fig = px.line(chronistic_df,
+    elif timeseries_chart_type.get() == 'Line':
+        fig = px.line(timeseries_df,
             y='TJ', x='Period', color=category, color_discrete_map=eeud_colours.to_dict(),
             markers=True).update_xaxes(dtick=1)
-        fig.update_layout(yaxis=dict(title=f"{input.chronistic_display()} Energy Usage (TJ)"))
+        fig.update_layout(yaxis=dict(title=f"{input.timeseries_display()} Energy Usage (TJ)"))
         fig.update_layout(legend=dict(
             orientation="h",
             yanchor="bottom", y=1.02,
@@ -906,11 +790,11 @@ def display_chronistic_chart():
         fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
         return fig
 
-    elif chronistic_chart_type.get() == 'Area':
-        fig = px.area(chronistic_df,
+    elif timeseries_chart_type.get() == 'Area':
+        fig = px.area(timeseries_df,
             y='TJ', x='Period', color=category, color_discrete_map=eeud_colours.to_dict(),
             markers=True).update_xaxes(dtick=1)
-        fig.update_layout(yaxis=dict(title=f"{input.chronistic_display()} Energy Usage (TJ)"))
+        fig.update_layout(yaxis=dict(title=f"{input.timeseries_display()} Energy Usage (TJ)"))
         fig.update_layout(legend=dict(
             orientation="h",
             yanchor="bottom", y=1.02,
@@ -919,7 +803,6 @@ def display_chronistic_chart():
         fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
         fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
         return fig
-
 
 ``` 
 
@@ -1000,7 +883,6 @@ async def download_data_filtered_data():
 ```
 
 ### Column
-
 
 ```{python} 
 @render.data_frame

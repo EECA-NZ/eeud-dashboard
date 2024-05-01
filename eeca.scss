@@ -4,6 +4,11 @@ $primary: #164057;
 $secondary: #CBCDD5; //#9CA2B0;
 $tertiary: #E8ECEE;
 $light: #F8F8F9;
+$coral: #f8A899;
+$emerald: #41b496;
+$bold: 700;
+$medium: 500;
+$regular: 400;
 
 $navbar-bg: $tertiary !default;
 $navbar-fg: $primary !default;
@@ -25,6 +30,7 @@ body{
     font-family: Barlow !important;
     color: $primary;
     font-stretch: condensed;
+    font-weight: $regular !important;
 }
 
 .navbar{
@@ -35,7 +41,7 @@ body{
 
 .navbar-title {
     font-size: 1.75rem !important;
-    font-weight: bold !important;
+    font-weight: $bold !important;
 }
 
 //.navbar-brand-container {
@@ -56,6 +62,8 @@ body{
 }
 
 .quarto-dashboard .navbar .navbar-nav { 
+
+    font-weight: $medium !important;
 
     li:hover {
         box-shadow: 0px -2px inset $primary !important;
@@ -86,7 +94,7 @@ body{
 .nav-item {
     font-size: 1.15rem; //1.25rem
     font-stretch: normal !important;
-    font-weight: 500 !important;
+    font-weight: $medium !important;
     .active{
         background-color: $tertiary !important;
     }    
@@ -104,7 +112,7 @@ body{
 .card-header {
     background-color: $tertiary !important; //#E8ECEE
     color: $primary !important;
-    font-weight: bold !important;
+    font-weight: $bold !important;
     border: 0px !important;
 }
 
@@ -135,16 +143,16 @@ body{
 
 .value-box-title {
     font-size: 1rem !important;
-    font-weight: 600 !important;
+    font-weight: $bold !important;
 }
 
 .value-box-value {
     font-weight: 1.5rem;
-    font-weight: bold !important;
+    font-weight: $bold !important;
 }
 
 .value-box-showcase {
-    color: #FF8B83 !important;
+    color: $coral !important;
 }
 
 .bg-primary {
@@ -152,7 +160,7 @@ body{
         background-color: $primary !important;
     }
     .value-box-showcase {
-        color: #00B696 !important;
+        color: $emerald !important;
     }
 }
 
@@ -169,7 +177,7 @@ body{
 }
 
 .control-label {
-    font-weight: bold !important;
+    font-weight: $bold !important;
     font-weight: 1rem !important;
 }
 
@@ -178,8 +186,7 @@ body{
 }
 
 .irs {
-    // Add padding around the slider to ensure labels do not get cut off
-    margin: 0 $def-padding !important; // Adjust this value as needed
+    margin: 0 $def-padding !important; 
 }
 
 .irs--shiny .irs-bar,
@@ -187,25 +194,14 @@ body{
 .irs--shiny .irs-single,
 .irs--shiny .irs-from,
 .irs--shiny .irs-to {
-    // Example: Adjusting the background or border for visibility
-    background-color: $primary !important; // Example color
-    border-color: $primary !important; // Example border color
+    background-color: $primary !important;
+    border-color: $primary !important;
 }
 
-//.bslib-sidebar-layout {
-//    position: relative; 
-//}
 
 #download_explore_filtered_data, #download_timeseries_filtered_data, #download_data_filtered_data {
-//    float: center !important;
-//    position: absolute !important;
-//    bottom: 0 !important;
-//    left: 0 !important;
-//    clear: left !important;
-//    margin: 1rem !important; //var(--bs-card-spacer-y) var(--bs-card-spacer-x)
-//    width: 85% !important;
     width: 100% !important;
-    font-weight: bold !important;
+    font-weight: $bold !important;
 }
 
 .shiny-input-select, .form-select, .selectize-control, .selectize-input, .selectize-dropdown {

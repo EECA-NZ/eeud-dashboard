@@ -25,7 +25,7 @@ import numpy as np
 
 eeud = pd.read_csv('./data/EEUD-03042024.csv').set_index('Row')
 eeud['PeriodEndDate'] = pd.to_datetime(eeud['PeriodEndDate'])
-eeud_colours = pd.read_csv('./data/eeud-2-colour-palette.csv', index_col=0, header=0, dtype=str).squeeze("columns")
+eeud_colours = pd.read_csv('./data/eeud-colour-palette.csv', index_col=0, header=0, dtype=str).squeeze("columns")
 eeud_colours = eeud_colours[~eeud_colours.index.duplicated()]
 # eeud_colours = eeud_colours.apply(lambda x: f"#{x}" if '#' not in x else x)
 
@@ -163,7 +163,7 @@ def create_alluvial_links_for_dict(df, category_column, date_column, date_freq='
 ```{python}
 ui.input_select("highlight_category", "Highlight", choices=["End Use", "Fuel", "Sector", "Technology"], selected="Fuel")
 ```
-<p style="align-content: flex-end; font-size: 1rem; padding-top: 1rem; line-height: 0px;">Values presented for 2022</p>
+<div style="flex-grow: 1; text-align: right;"><p style="font-size: 1rem; padding-top: 1rem; line-height: 0px;">Values presented for 2022</p></div>
 
 #### Row
 ```{python}
@@ -182,11 +182,13 @@ def display_overview_energy_use():
         eeud_subset,
         path=[group, category],
         values='TJ',
-        color=group,
+        color=category,
         color_discrete_map=eeud_colours.to_dict()
     )
-    fig.update_traces(marker=dict(line=dict(color='rgba(232,236,238,255)', width=1)))
-    
+    fig.update_traces(marker_colors=[eeud_colours[parent] for parent in fig.data[-1].labels])
+    fig.update_traces(marker=dict(line=dict(color='rgba(232,236,238,255)', width=0)),
+        insidetextorientation='radial')
+    #fig.update_layout(uniformtext=dict(minsize=10, mode='hide'))
     fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoscale'])
     fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
@@ -443,7 +445,7 @@ def display_treemap():
     complete_df = pd.concat([groups_df, eeud_aggregated], ignore_index=True, sort=False)
     complete_df['label'] = complete_df[category].where(complete_df[category] != '', complete_df[group])
     complete_df['styled_label'] = complete_df['label'].apply(lambda x: f"{x}")
-    complete_df['colour'] = complete_df[group].map(eeud_colours).fillna('#FFFFFF')
+    complete_df['colour'] = complete_df[category].map(eeud_colours).fillna('#FFFFFF')
 
     # Plotting the treemap without the 'Root' node.
     fig = go.Figure(data=[go.Treemap(
@@ -456,6 +458,7 @@ def display_treemap():
         textposition="middle center",
         hoverinfo='none',
     )])
+    fig.update_traces(marker_colors=[eeud_colours[parent] for parent in fig.data[-1].labels])
 
     #fig.update_traces(marker=dict(line=dict(color='rgba(232,236,238,255)', width=1)))  # Adjust 'width' as needed for visibility
 
@@ -621,6 +624,7 @@ def display_explore_chart():
         fig = px.bar(explore_df,
             x='TJ', y=left_node, color=right_node, color_discrete_map=eeud_colours.to_dict()
         )
+        fig.update_traces(marker=dict(line=dict(color='rgba(0,0,0,0)', width=0)))
         fig.update_layout(legend=dict(
             orientation="h",
             yanchor="bottom", y=1.02,
@@ -754,7 +758,7 @@ def display_timeseries_chart():
     if input.timeseries_display() == "Proportional":
         total_tj_by_period = timeseries_df.groupby('Period')['TJ'].sum().reset_index(name='TotalTJ')
         timeseries_df = pd.merge(timeseries_df, total_tj_by_period, on='Period')
-        timeseries_df['TJ_Proportion'] = timeseries_df['TJ'] / timeseries_df['TotalTJ']
+        timeseries_df['TJ'] = timeseries_df['TJ'] / timeseries_df['TotalTJ']
 
     if timeseries_chart_type.get() == 'Alluvial':
         timeseries_links, timeseries_nodes = create_alluvial_links_for_dict(timeseries_eeud_filtered(), category, 'PeriodEndDate')

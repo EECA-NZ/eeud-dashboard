@@ -196,7 +196,7 @@ body{
 //    position: relative; 
 //}
 
-#explore_download, #chronistic_download, #data_download {
+#download_explore_filtered_data, #download_timeseries_filtered_data, #download_data_filtered_data {
 //    float: center !important;
 //    position: absolute !important;
 //    bottom: 0 !important;
@@ -227,3 +227,4 @@ table {
         border: 1px solid $secondary;
     }
 }
+          

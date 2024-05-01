@@ -541,10 +541,11 @@ def explore_eeud_filtered():
 ```
 
 <br/>
-<h5>Download</h5>
+<h5>Data View</h5>
 
 ```{python}
 @render.download(
+    label="Download CSV",
     filename=lambda: f"explore-{date.today().isoformat()}-{np.random.randint(100, 999)}.csv"
 )
 async def download_explore_filtered_data():
@@ -697,10 +698,11 @@ def timeseries_eeud_filtered():
 ```
 
 <br/>
-<h5>Download</h5>
+<h5>Data View</h5>
 
 ```{python}
 @render.download(
+    label="Download CSV",
     filename=lambda: f"timeseries-{date.today().isoformat()}-{np.random.randint(100, 999)}.csv"
 )
 async def download_timeseries_filtered_data():
@@ -869,10 +871,11 @@ def data_eeud_filtered():
 ```
 
 <br/>
-<h5>Download</h5>
+<h5>Data View</h5>
 
 ```{python}
 @render.download(
+    label="Download CSV",
     filename=lambda: f"data-{date.today().isoformat()}-{np.random.randint(100, 999)}.csv"
 )
 async def download_data_filtered_data():

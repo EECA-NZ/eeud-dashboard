@@ -198,10 +198,12 @@ body{
     border-color: $primary !important;
 }
 
+.btn {
+    font-weight: $medium !important;
+}
 
 #download_explore_filtered_data, #download_timeseries_filtered_data, #download_data_filtered_data {
     width: 100% !important;
-    font-weight: $bold !important;
 }
 
 .shiny-input-select, .form-select, .selectize-control, .selectize-input, .selectize-dropdown {

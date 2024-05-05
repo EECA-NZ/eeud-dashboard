@@ -25,17 +25,19 @@ import numpy as np
 
 eeud = pd.read_csv('./data/EEUD-03042024.csv').set_index('Row')
 eeud['PeriodEndDate'] = pd.to_datetime(eeud['PeriodEndDate'])
+eeud['Fuel'].replace('Electricity', 'Electricity&#8203;', inplace=True)
+eeud['Sector'].replace('Residential', 'Residential&#8203;', inplace=True)
 eeud_colours = pd.read_csv('./data/eeud-colour-palette.csv', index_col=0, header=0, dtype=str).squeeze("columns")
 eeud_colours = eeud_colours[~eeud_colours.index.duplicated()]
 # eeud_colours = eeud_colours.apply(lambda x: f"#{x}" if '#' not in x else x)
 
-sector_groups_list = list(eeud['SectorGroup'].sort_values().unique())
-sectors_list = list(eeud['Sector'].sort_values().unique())
-fuels_list = list(eeud['Fuel'].sort_values().unique())
-technology_groups_list = list(eeud['TechnologyGroup'].sort_values().unique())
-technologies_list = list(eeud['Technology'].sort_values().unique())
-years_list = list(eeud['Period'].sort_values(ascending=False).unique())
-end_uses_list = list(eeud['EndUse'].sort_values().unique())
+sector_groups_list = list(eeud['SectorGroup'].dropna().sort_values().unique())
+sectors_list = list(eeud['Sector'].dropna().sort_values().unique())
+fuels_list = list(eeud['Fuel'].dropna().sort_values().unique())
+technology_groups_list = list(eeud['TechnologyGroup'].dropna().sort_values().unique())
+technologies_list = list(eeud['Technology'].dropna().sort_values().unique())
+years_list = list(eeud['Period'].dropna().sort_values(ascending=False).unique())
+end_uses_list = list(eeud['EndUse'].dropna().sort_values().unique())
 sector_groups = {group: set(sub_df['Sector'].dropna()) for group, sub_df in eeud.groupby('SectorGroup')}
 
 ```
@@ -152,43 +154,65 @@ def create_alluvial_links_for_dict(df, category_column, date_column, date_freq='
 
 ```
 
+# Overview
 
-# Overview 2
+## Row
 
-## Row {height=65%}
-
-### Column {width=60%}
+### Column
 
 #### Row {.toolbar}
+<div style="flex-grow: 1; text-align: left;"><p style="font-size: 1rem; padding-top: 1rem; line-height: 0px;">Values presented for 2022</p></div>
+<div style="flex-grow: 0; text-align: right;">
 ```{python}
-ui.input_select("highlight_category", "Highlight", choices=["End Use", "Fuel", "Sector", "Technology"], selected="Fuel")
+ui.input_select("highlight_category", "Highlight", choices=["End Use", "Fuel", "Sector", "Technology"], selected="End Use")
 ```
-<div style="flex-grow: 1; text-align: right;"><p style="font-size: 1rem; padding-top: 1rem; line-height: 0px;">Values presented for 2022</p></div>
+</div>
 
 #### Row
+
 ```{python}
-#| title: "Energy Usage"
+@render.ui
+def total_use():
+    return ui.value_box(
+        "Total Energy Use 2022 (TJ)",
+        f"{round(eeud[eeud.Period==max(eeud.Period)]['TJ'].sum()/1000)*1000:,}",
+        showcase=ui.HTML('''
+            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-lightning-charge" viewBox="0 0 16 16">
+                <path d="M11.251.068a.5.5 0 0 1 .227.58L9.677 6.5H13a.5.5 0 0 1 .364.843l-8 8.5a.5.5 0 0 1-.842-.49L6.323 9.5H3a.5.5 0 0 1-.364-.843l8-8.5a.5.5 0 0 1 .615-.09zM4.157 8.5H7a.5.5 0 0 1 .478.647L6.11 13.59l5.732-6.09H9a.5.5 0 0 1-.478-.647L9.89 2.41z"/>
+            </svg>
+        '''),
+        theme="secondary",
+        showcase_layout="left center",
+    )
+```
 
+#### Row {height=80%}
+
+```{python}
+#| title: Energy Usage Trend
+#| expandable: true
 @render_widget
-def display_overview_energy_use():
-
+def display_trend():
     category = title_case(input.highlight_category())
     group = category + "Group"
-    eeud_subset = eeud[~pd.isna(eeud[category])]
+    eeud_subset = eeud[~pd.isna(eeud[category])].copy()
     to_replace = ['Bus', 'Freight Rail', 'Heavy Truck', 'Light Commercial Vehicle', 'Light Passenger Vehicle', 'Medium Truck', 'Motorcycle', 'Passenger Rail', 'Plane', 'Ship', 'Very Heavy Truck']
     eeud_subset['TechnologyGroup'] = eeud_subset['TechnologyGroup'].apply(lambda g: 'Transport' if g in to_replace else g)
 
-    fig = px.sunburst(
-        eeud_subset,
-        path=[group, category],
-        values='TJ',
-        color=category,
-        color_discrete_map=eeud_colours.to_dict()
-    )
-    fig.update_traces(marker_colors=[eeud_colours[parent] for parent in fig.data[-1].labels])
-    fig.update_traces(marker=dict(line=dict(color='rgba(232,236,238,255)', width=0)),
-        insidetextorientation='radial')
-    #fig.update_layout(uniformtext=dict(minsize=10, mode='hide'))
+    grouped = eeud_subset.groupby([group, 'Period']).sum(numeric_only=True).reset_index()
+    total_tj_by_period = grouped.groupby('Period')['TJ'].sum().reset_index(name='TotalTJ')
+    merged = pd.merge(grouped, total_tj_by_period, on='Period')
+    merged['TJ_Proportion'] = merged['TJ'] / merged['TotalTJ']
+
+    fig = px.area(grouped,
+        y='TJ', x='Period', color=group, color_discrete_map=eeud_colours.to_dict(),
+        markers=True).update_xaxes(dtick=1)
+    fig.update_layout(yaxis=dict(title=f"Total Energy Usage (TJ)"))
+    fig.update_layout(legend=dict(
+        orientation="h",
+        yanchor="bottom", y=1.02,
+        xanchor="left", x=0))
+    fig.update_xaxes(dtick=1)
     fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoscale'])
     fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
@@ -196,21 +220,10 @@ def display_overview_energy_use():
 
 ```
 
-### Column {width=40%}
+### Column {width=60%}
 
 #### Row
-```{python}
-#| content: valuebox
-#| title: "Total Energy Use 2022 (TJ)"
 
-dict(
-    icon = "lightning-charge",
-    color = "secondary",
-    value = f"{round(eeud[eeud.Period==max(eeud.Period)]['TJ'].sum()/1000)*1000:,}"
-)
-```
-
-#### Row {height=50%}
 ```{python}
 @render.ui
 def largest_use():
@@ -234,24 +247,6 @@ def largest_use():
     )
 ```
 
-```{python}
-@render.ui
-def extra_valuebox():
-    return ui.value_box(
-        "Title",
-        "Value",
-        "Subtitle",
-        showcase=ui.HTML('''
-            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-question-lg" viewBox="0 0 16 16">
-                <path fill-rule="evenodd" d="M4.475 5.458c-.284 0-.514-.237-.47-.517C4.28 3.24 5.576 2 7.825 2c2.25 0 3.767 1.36 3.767 3.215 0 1.344-.665 2.288-1.79 2.973-1.1.659-1.414 1.118-1.414 2.01v.03a.5.5 0 0 1-.5.5h-.77a.5.5 0 0 1-.5-.495l-.003-.2c-.043-1.221.477-2.001 1.645-2.712 1.03-.632 1.397-1.135 1.397-2.028 0-.979-.758-1.698-1.926-1.698-1.009 0-1.71.529-1.938 1.402-.066.254-.278.461-.54.461h-.777ZM7.496 14c.622 0 1.095-.474 1.095-1.09 0-.618-.473-1.092-1.095-1.092-.606 0-1.087.474-1.087 1.091S6.89 14 7.496 14"/>
-            </svg>
-        '''),
-        theme="secondary",
-        showcase_layout="left center",
-    )
-```
-
-#### Row {height=50%}
 ```{python}
 @render.ui
 def largest_increase():
@@ -300,132 +295,22 @@ def largest_decrease():
     )
 ```
 
-## Row
+#### Row {height=74%}
 ```{python}
-#| title: Energy Usage Trend
+#| title: Treemap
+#| expandable: true
 @render_widget
-def display_overview_energy_trend():
+def display_treemap():
+    # Aggregate EnergyValue by Group and Category.
     category = title_case(input.highlight_category())
-    group = category + "Group"
-    eeud_subset = eeud[~pd.isna(eeud[category])]
-    to_replace = ['Bus', 'Freight Rail', 'Heavy Truck', 'Light Commercial Vehicle', 'Light Passenger Vehicle', 'Medium Truck', 'Motorcycle', 'Passenger Rail', 'Plane', 'Ship', 'Very Heavy Truck']
-    eeud_subset['TechnologyGroup'] = eeud_subset['TechnologyGroup'].apply(lambda g: 'Transport' if g in to_replace else g)
-
-    grouped = eeud_subset.groupby([group, 'Period']).sum(numeric_only=True).reset_index()
-    total_tj_by_period = grouped.groupby('Period')['TJ'].sum().reset_index(name='TotalTJ')
-    merged = pd.merge(grouped, total_tj_by_period, on='Period')
-    merged['TJ_Proportion'] = merged['TJ'] / merged['TotalTJ']
-
-    fig = px.area(grouped,
-        y='TJ', x='Period', color=group, color_discrete_map=eeud_colours.to_dict(),
-        markers=True).update_xaxes(dtick=1)
-    fig.update_layout(yaxis=dict(title=f"Total Energy Usage (TJ)"))
-    
-    fig.update_layout(legend=dict(
-        orientation="h",
-        yanchor="bottom", y=1.02,
-        xanchor="left", x=0))
-    fig.update_xaxes(dtick=1)
-    fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoscale'])
-    fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
-    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-    return fig
-```
-
-# Overview 1
-
-## Row
-
-### Column {width=40%}
-
-#### Row {.toolbar}
-```{python}
-ui.input_select("treemap_category", "Highlight", choices=["End Use", "Fuel", "Sector", "Technology"], selected="Sector")
-```
-
-#### Row
-```{python}
-#| content: valuebox
-#| title: "Total Energy Use 2022 (TJ)"
-dict(
-    icon = "lightning-charge",
-    color = "secondary",
-    value = "Value"
-)
-```
-
-#### Row
-```{python}
-#| content: valuebox
-#| title: "Largest Use"
-dict(
-    icon = "bar-chart-line",
-    color = "secondary",
-    value = "Value"
-)
-```
-```{python}
-#| content: valuebox
-#| title: "Largest Increase"
-dict(
-    icon = "graph-up-arrow",
-    color = "secondary",
-    value = "Value"
-)
-```
-
-```{python}
-#| content: valuebox
-#| title: "Largest Decrease"
-dict(
-    icon = "graph-down-arrow",
-    color = "secondary",
-    value = "Value"
-)
-```
-
-### Column {width=60%}
-```{python}
-#| title: Energy Usage Trend
-@render_widget
-def display_old_category_trend():
-    category = title_case(input.treemap_category())
     group = category + "Group"
     eeud_subset = eeud[~pd.isna(eeud[category])].copy()
     to_replace = ['Bus', 'Freight Rail', 'Heavy Truck', 'Light Commercial Vehicle', 'Light Passenger Vehicle', 'Medium Truck', 'Motorcycle', 'Passenger Rail', 'Plane', 'Ship', 'Very Heavy Truck']
     eeud_subset['TechnologyGroup'] = eeud_subset['TechnologyGroup'].apply(lambda g: 'Transport' if g in to_replace else g)
+    data_last_year = eeud_subset[eeud_subset['Period'].isin([eeud_subset['Period'].max()])]
+    eeud_aggregated = data_last_year.groupby([group, category], as_index=False).agg({'TJ': 'sum'})
 
-    grouped = eeud_subset.groupby([group, 'Period']).sum(numeric_only=True).reset_index()
-    total_tj_by_period = grouped.groupby('Period')['TJ'].sum().reset_index(name='TotalTJ')
-    merged = pd.merge(grouped, total_tj_by_period, on='Period')
-    merged['TJ_Proportion'] = merged['TJ'] / merged['TotalTJ']
 
-    fig = px.area(grouped,
-        y='TJ', x='Period', color=group, color_discrete_map=eeud_colours.to_dict(),
-        markers=True).update_xaxes(dtick=1)
-    fig.update_layout(yaxis=dict(title=f"Total Energy Usage (TJ)"))
-    fig.update_layout(legend=dict(
-        orientation="h",
-        yanchor="bottom", y=1.02,
-        xanchor="left", x=0))
-    fig.update_xaxes(dtick=1)
-    fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoscale'])
-    fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
-    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-    return fig
-
-```
-
-## Row {height=60%}
-```{python}
-#| title: Treemap
-@render_widget
-def display_treemap():
-    # Aggregate EnergyValue by Group and Category.
-    category = title_case(input.treemap_category())
-    group = category + "Group"
-    #category, group = 'Sector', 'SectorGroup'
-    eeud_aggregated = eeud.groupby([group, category], as_index=False).agg({'TJ': 'sum'})
 
     # Prepare a DataFrame for Plotly.
     # Add an 'id' for each Category combining it with Group to ensure uniqueness.
@@ -469,6 +354,7 @@ def display_treemap():
     return fig
 
 ```
+
 
 # Explore
 
@@ -911,15 +797,11 @@ def dataview():
 
 <p>Energy End Use Database (EEUD) is a unique New Zealand data asset maintained by Energy Efficiency and Conservation Authority (EECA) enabling insights and analysis of energy use across sectors and technology by government, industry, and academia.</p>
 
-<p>The EEUD provides annual estimates of how energy is used across the New Zealand economy. Delivered energy estimates are provided for fuel types, sectors, end uses and technologies. The current published data covers years 2017 to 2021. The data is always released for the previous year soon after the MBIE Energy Balances are released.</p>
+<p>The EEUD provides annual estimates of how energy is used across the New Zealand economy. Delivered energy estimates are provided for fuel types, sectors, end uses and technologies. The current published data covers years 2017 to 2022. The data is always released for the previous year soon after the MBIE Energy Balances are released.</p>
 
 <p>Energy use estimates are derived using a *top down* approach based on MBIE's annual high-level sector/fuel energy demand data and proportioned into further disaggregated sectors, end use applications and technology values using *bottom up* data held by EECA.</p>
 
-<h5><b>Sankey Diagram Explanation</b></h5>
-
-The Sankey diagrams shown here display the flow of energy from one group category to another. For instance, the energy flow from the group *Fuel* to the group *End Use* shows how different fuel types are used. For instance, 84,808 Terajoules of Electricity is used for Heating/Cooling in 2020. The size of each flow bar on the Sankey diagram is proportional to the volume of energy expressed.
-
-##### **Short guide on categories in the database**
+#### **Short guide on categories in the database**
 
 The EEUD is split into four categories – Sector, Fuel Type, End Use, and Technology. Each category has two levels (group level and disaggregated level), as tabled below with examples. The levels are shown in the tool as filter options in the dropdown boxes (i.e., the user can select to view the data by Sector Group, or by Sector for more disaggregation. For complete lists refer to the documentation linked below.
 <table>
@@ -972,7 +854,7 @@ The EEUD is split into four categories – Sector, Fuel Type, End Use, and Techn
 
 &nbsp;
 
-##### **Find out more about the Energy End Use Database (EEUD)**
+#### **Find out more about the Energy End Use Database (EEUD)**
 
 To learn more about the methodology check out the document *[Energy End Use Database (EEUD) - Key insights and methodology](#about)*.
 

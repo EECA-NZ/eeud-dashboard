@@ -2,7 +2,7 @@
 Renewables,#41B496
 Electricity,#164057
 Fossil Fuels,#E94E24
-Electricity,#425970
+Electricity​,#425970
 Av. Fuel/Kero,#eb5e36
 Coal,#ee6f48
 Diesel,#f07f5a
@@ -55,7 +55,7 @@ Printing,#f6ab8b
 "Pulp, Paper and Converted Paper Product Manufacturing",#f7b293
 "Textile, Leather, Clothing and Footwear Manufacturing",#f8b99b
 Wood Product Manufacturing,#f9c0a3
-Residential,#00C4AB
+Residential​,#00C4AB
 Air Transport,#5e8788
 Rail Transport,#779a9b
 Road Transport,#90aeae
@@ -126,9 +126,9 @@ Iron and Steel,#3C4C49
 Compressed Air,#2c5066
 Electronics and Other Electrical Uses,#436175
 Fans,#597184
-Irrigation,#6f8192
+Irrigation​,#6f8192
 Lighting,#8692a1
-Refiners,#9ca2b0
+Refiners​,#9ca2b0
 "High Temperature Heat (>300 C), Process Requirements",#49b89c
 "Intermediate Heat (100-300 C), Cooking",#52bca2
 "Intermediate Heat (100-300 C), Process Requirements",#5ac1a7

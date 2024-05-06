@@ -25,11 +25,14 @@ import numpy as np
 
 eeud = pd.read_csv('./data/EEUD-03042024.csv').set_index('Row')
 eeud['PeriodEndDate'] = pd.to_datetime(eeud['PeriodEndDate'])
-eeud['Fuel'].replace('Electricity', 'Electricity&#8203;', inplace=True)
-eeud['Sector'].replace('Residential', 'Residential&#8203;', inplace=True)
 eeud_colours = pd.read_csv('./data/eeud-colour-palette.csv', index_col=0, header=0, dtype=str).squeeze("columns")
 eeud_colours = eeud_colours[~eeud_colours.index.duplicated()]
 # eeud_colours = eeud_colours.apply(lambda x: f"#{x}" if '#' not in x else x)
+
+eeud['Fuel'] = eeud['Fuel'].replace('Electricity', 'Electricity​')
+eeud['Sector'] = eeud['Sector'].replace('Residential', 'Residential​')
+eeud['EndUse'] = eeud['EndUse'].replace('Irrigation', 'Irrigation​')
+eeud['EndUse'] = eeud['EndUse'].replace('Refiners', 'Refiners​')
 
 sector_groups_list = list(eeud['SectorGroup'].dropna().sort_values().unique())
 sectors_list = list(eeud['Sector'].dropna().sort_values().unique())
@@ -94,7 +97,7 @@ def create_sankey_links_for_dict(df, *columns):
         'source': links_df['source'].tolist(),
         'target': links_df['target'].tolist(),
         'value': links_df['TJ'].tolist(),
-        'color': links_df['source'].apply(lambda s: hex_to_rgba(eeud_colours[labels[s].split('_')[0]] if labels[s].split('_')[0] in eeud_colours else "#000000", 2/3)).tolist()
+        'color': links_df['source'].apply(lambda s: hex_to_rgba(eeud_colours[labels[s].split('_')[0]] if labels[s].split('_')[0] in eeud_colours else "#000000", 0.8)).tolist()
     }
 
     nodes_dict = {
@@ -310,8 +313,6 @@ def display_treemap():
     data_last_year = eeud_subset[eeud_subset['Period'].isin([eeud_subset['Period'].max()])]
     eeud_aggregated = data_last_year.groupby([group, category], as_index=False).agg({'TJ': 'sum'})
 
-
-
     # Prepare a DataFrame for Plotly.
     # Add an 'id' for each Category combining it with Group to ensure uniqueness.
     eeud_aggregated['id'] = eeud_aggregated[group] + '-' + eeud_aggregated[category]
@@ -323,7 +324,7 @@ def display_treemap():
         category: [''] * len(eeud_aggregated[group].unique()),  # Placeholder
         'EnergyValue': [0] * len(eeud_aggregated[group].unique()),  # Placeholder, value not used
         'id': eeud_aggregated[group].unique(),
-        'parent': [category] * len(eeud_aggregated[group].unique())
+        'parent': [input.highlight_category()] * len(eeud_aggregated[group].unique())
     })
 
     # Combine group nodes and category nodes.
@@ -482,9 +483,16 @@ explore_chart_type = reactive.value('Sankey')
 def display_explore_chart():
     left_node = title_case(input.explore_left_node())
     right_node = title_case(input.explore_right_node())
-    explore_df = explore_eeud_filtered().groupby([left_node, right_node]).sum(numeric_only=True).reset_index(drop=False)
+    explore_df = explore_eeud_filtered()
+    
+    if left_node == right_node:
+        explore_df['Proxy'] = 'Total Energy Use'
+        right_node = 'Proxy'
+
+    explore_df = explore_df.groupby([left_node, right_node]).sum(numeric_only=True).reset_index(drop=False)
 
     if explore_chart_type.get() == 'Sankey':
+        
         explore_links, explore_nodes = create_sankey_links_for_dict(explore_df, left_node, right_node)
         fig = go.Figure(data=[go.Sankey(
             node = dict(
@@ -508,13 +516,15 @@ def display_explore_chart():
 
     elif explore_chart_type.get() == 'Bar':
         fig = px.bar(explore_df,
-            x='TJ', y=left_node, color=right_node, color_discrete_map=eeud_colours.to_dict()
+            x='TJ', y=left_node, color=right_node if right_node != 'Proxy' else left_node, color_discrete_map=eeud_colours.to_dict()
         )
         fig.update_traces(marker=dict(line=dict(color='rgba(0,0,0,0)', width=0)))
         fig.update_layout(legend=dict(
             orientation="h",
             yanchor="bottom", y=1.02,
             xanchor="left", x=0))
+        if right_node == 'Proxy':
+            fig.update_layout(showlegend=False)
         fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoscale'])
         fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
         fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')

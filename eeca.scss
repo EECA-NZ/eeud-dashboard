@@ -142,14 +142,17 @@ body{
     }   
 }
 
-.value-box-title {
-    font-size: 1rem !important;
-    font-weight: $bold !important;
-}
-
-.value-box-value {
-    font-weight: 1.5rem;
-    font-weight: $bold !important;
+.value-box-area {
+    color: $primary !important;
+    .value-box-title {
+        font-size: 1rem !important;
+        font-weight: $bold !important;
+    }
+    
+    .value-box-value {
+        font-weight: 1.5rem;
+        font-weight: $bold !important;
+    }    
 }
 
 .value-box-showcase {
@@ -234,4 +237,3 @@ table {
         border: 1px solid $secondary !important;
     }
 }
-          

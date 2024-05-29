@@ -27,12 +27,15 @@ eeud = pd.read_csv('./data/EEUD-03042024.csv').set_index('Row')
 eeud['PeriodEndDate'] = pd.to_datetime(eeud['PeriodEndDate'])
 eeud_colours = pd.read_csv('./data/eeud-colour-palette.csv', index_col=0, header=0, dtype=str).squeeze("columns")
 eeud_colours = eeud_colours[~eeud_colours.index.duplicated()]
-# eeud_colours = eeud_colours.apply(lambda x: f"#{x}" if '#' not in x else x)
+eeud_colours.index = eeud_colours.index.map(lambda l: str(l).strip() if 'Unknown' not in l else l)
 
+eeud.fillna({'EndUse': 'Unknown​', 'Fuel': 'Unknown​​', 'Sector': 'Unknown​​​', 'Technology': 'Unknown​​​​',
+             'EndUseGroup': 'Unknown​​​​​', 'FuelGroup': 'Unknown​​​​​​', 'SectorGroup': 'Unknown​​​​​​​', 'TechnologyGroup': 'Unknown​​​​​​​​'}, inplace=True)
 eeud['Fuel'] = eeud['Fuel'].replace('Electricity', 'Electricity​')
 eeud['Sector'] = eeud['Sector'].replace('Residential', 'Residential​')
 eeud['EndUse'] = eeud['EndUse'].replace('Irrigation', 'Irrigation​')
 eeud['EndUse'] = eeud['EndUse'].replace('Refiners', 'Refiners​')
+eeud['Technology'] = eeud['Technology'].apply(lambda t: str(t).strip() if 'Unknown' not in t else t)
 
 sector_groups_list = list(eeud['SectorGroup'].dropna().sort_values().unique())
 sectors_list = list(eeud['Sector'].dropna().sort_values().unique())
@@ -97,12 +100,12 @@ def create_sankey_links_for_dict(df, *columns):
         'source': links_df['source'].tolist(),
         'target': links_df['target'].tolist(),
         'value': links_df['TJ'].tolist(),
-        'color': links_df['source'].apply(lambda s: hex_to_rgba(eeud_colours[labels[s].split('_')[0]] if labels[s].split('_')[0] in eeud_colours else "#000000", 0.8)).tolist()
+        'color': links_df['source'].apply(lambda s: hex_to_rgba(eeud_colours[labels[s].split('_')[0]] if labels[s].split('_')[0] in eeud_colours else "#9CA2B0", 0.8)).tolist()
     }
 
     nodes_dict = {
         'label': labels,
-        'color': list(map(lambda l: hex_to_rgba(eeud_colours[l.split('_')[0]] if l.split('_')[0] in eeud_colours else "#000000", 1), labels))
+        'color': list(map(lambda l: hex_to_rgba(eeud_colours[l.split('_')[0]] if l.split('_')[0] in eeud_colours else "#9CA2B0", 1), labels))
     }
 
     return link_dict, nodes_dict
@@ -145,12 +148,12 @@ def create_alluvial_links_for_dict(df, category_column, date_column, date_freq='
         'source': grouped_df['source'].tolist()[:-1], # Exclude the last mapping as it has no next period
         'target': grouped_df['target'].tolist()[:-1],
         'value': grouped_df['TJ'].tolist()[:-1],
-        'color': grouped_df['source'].apply(lambda s: hex_to_rgba(eeud_colours[labels[s].split('_')[0]] if labels[s].split('_')[0] in eeud_colours else "#000000", 2/3)).tolist()
+        'color': grouped_df['source'].apply(lambda s: hex_to_rgba(eeud_colours[labels[s].split('_')[0]] if labels[s].split('_')[0] in eeud_colours else "#CBCDD5", 2/3)).tolist()
     }
 
     nodes_dict = {
         'label': list(map(lambda l: l.replace('_', ' '), labels)),
-        'color': list(map(lambda l: hex_to_rgba(eeud_colours[l.split('_')[0]] if l.split('_')[0] in eeud_colours else "#000000", 1), labels))
+        'color': list(map(lambda l: hex_to_rgba(eeud_colours[l.split('_')[0]] if l.split('_')[0] in eeud_colours else "#CBCDD5", 1), labels))
     }
 
     return link_dict, nodes_dict
@@ -165,9 +168,9 @@ def create_alluvial_links_for_dict(df, category_column, date_column, date_freq='
 
 #### Row {.toolbar}
 <div style="flex-grow: 1; text-align: left;"><p style="font-size: 1rem; padding-top: 1rem; line-height: 0px;">Values presented for 2022</p></div>
-<div style="flex-grow: 0; text-align: right;">
+<div style="flex-grow: 0; text-align: right; padding-left: 0.375px;">
 ```{python}
-ui.input_select("highlight_category", "Highlight", choices=["End Use", "Fuel", "Sector", "Technology"], selected="End Use")
+ui.input_select("highlight_category", "Showcase", choices=["End Use", "Fuel", "Sector", "Technology"], selected="Fuel")
 ```
 </div>
 
@@ -177,7 +180,7 @@ ui.input_select("highlight_category", "Highlight", choices=["End Use", "Fuel", "
 @render.ui
 def total_use():
     return ui.value_box(
-        "Total Energy Use 2022 (TJ)",
+        f"Total Energy Use {max(eeud.Period)} (TJ)",
         f"{round(eeud[eeud.Period==max(eeud.Period)]['TJ'].sum()/1000)*1000:,}",
         showcase=ui.HTML('''
             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-lightning-charge" viewBox="0 0 16 16">
@@ -205,20 +208,22 @@ def display_trend():
     grouped = eeud_subset.groupby([group, 'Period']).sum(numeric_only=True).reset_index()
     total_tj_by_period = grouped.groupby('Period')['TJ'].sum().reset_index(name='TotalTJ')
     merged = pd.merge(grouped, total_tj_by_period, on='Period')
-    merged['TJ_Proportion'] = merged['TJ'] / merged['TotalTJ']
+    merged['TJ_Proportion'] = (merged['TJ'] / merged['TotalTJ']) * 100
 
-    fig = px.area(grouped,
-        y='TJ', x='Period', color=group, color_discrete_map=eeud_colours.to_dict(),
-        markers=True).update_xaxes(dtick=1)
+    fig = px.area(merged,
+        y='TJ', x='Period', color=group, color_discrete_map=eeud_colours.to_dict(), 
+        markers=True, hover_data={group: True, 'TJ_Proportion': True}).update_xaxes(dtick=1)
+    fig.update_traces(hovertemplate="%{customdata[0]} / %{x}<br>%{y:,.0f} TJ (%{customdata[1]:.1f}%)<extra></extra>")
     fig.update_layout(yaxis=dict(title=f"Total Energy Usage (TJ)"))
     fig.update_layout(legend=dict(
         orientation="h",
         yanchor="bottom", y=1.02,
         xanchor="left", x=0))
     fig.update_xaxes(dtick=1)
+    fig.update_layout(font_family="Barlow")
     fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoscale'])
     fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
-    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+    fig.update_layout(paper_bgcolor='rgba(232,236,238,255)', plot_bgcolor='rgba(232,236,238,255)')
     return fig
 
 ```
@@ -232,14 +237,14 @@ def display_trend():
 def largest_use():
     category = title_case(input.highlight_category())
     max_year = eeud['Period'].max()
-    data_last_year = eeud[eeud['Period'].isin([max_year])]
+    data_last_year = eeud[(eeud['Period'].isin([max_year]))&(~eeud[category].str.contains('Unknown'))]
     summed_data = data_last_year.groupby(category).agg({'TJ': 'sum'})
     max_use = summed_data['TJ'].idxmax()
 
     return ui.value_box(
         max_use if len(max_use) <=32 else max_use[:32]+"...",
         f"{round(summed_data['TJ'].max()/10)*10:,} TJ",
-        "Largest Use",
+        f"Largest {category}",
         showcase=ui.HTML('''
             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-bar-chart-line" viewBox="0 0 16 16">
                 <path d="M11 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12h.5a.5.5 0 0 1 0 1H.5a.5.5 0 0 1 0-1H1v-3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3h1V7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7h1zm1 12h2V2h-2zm-3 0V7H7v7zm-5 0v-3H2v3z"/>
@@ -255,15 +260,15 @@ def largest_use():
 def largest_increase():
     category = title_case(input.highlight_category())
     max_year = eeud['Period'].max()
-    data_last_two_years = eeud[eeud['Period'].isin([max_year, max_year - 1])]
+    data_last_two_years = eeud[(eeud['Period'].isin([max_year, max_year - 1]))&(~eeud[category].str.contains('Unknown'))]
     summed_data = data_last_two_years.groupby([category, 'Period']).agg({'TJ': 'sum'}).unstack()
     summed_data['growth'] = summed_data[('TJ', max_year)] - summed_data[('TJ', max_year - 1)]
     max_growth = summed_data['growth'].idxmax()
 
     return ui.value_box(
-        max_growth if len(max_growth) <=32 else max_growth[:32]+"...",
+        max_growth,
         f"{round(summed_data['growth'].max()/10)*10:,} TJ",
-        "Largest Increase",
+        "Largest Increase YoY",
         showcase=ui.HTML('''
             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-graph-up-arrow" viewBox="0 0 16 16">
                 <path fill-rule="evenodd" d="M0 0h1v15h15v1H0zm10 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0V4.9l-3.613 4.417a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61L13.445 4H10.5a.5.5 0 0 1-.5-.5"/>
@@ -279,15 +284,15 @@ def largest_increase():
 def largest_decrease():
     category = title_case(input.highlight_category())
     max_year = eeud['Period'].max()
-    data_last_two_years = eeud[eeud['Period'].isin([max_year, max_year - 1])]
+    data_last_two_years = eeud[(eeud['Period'].isin([max_year, max_year - 1]))&(~eeud[category].str.contains('Unknown'))]
     summed_data = data_last_two_years.groupby([category, 'Period']).agg({'TJ': 'sum'}).unstack()
     summed_data['growth'] = summed_data[('TJ', max_year)] - summed_data[('TJ', max_year - 1)]
     min_growth = summed_data['growth'].idxmin()
 
     return ui.value_box(
-        min_growth if len(min_growth) <=32 else min_growth[:32]+"...",
+        min_growth,
         f"{round(summed_data['growth'].min()/10)*10:,} TJ",
-        "Largest Decrease",
+        "Largest Decrease YoY",
         showcase=ui.HTML('''
             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-graph-down-arrow" viewBox="0 0 16 16">
                 <path fill-rule="evenodd" d="M0 0h1v15h15v1H0zm10 11.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 0-1 0v2.6l-3.613-4.417a.5.5 0 0 0-.74-.037L7.06 8.233 3.404 3.206a.5.5 0 0 0-.808.588l4 5.5a.5.5 0 0 0 .758.06l2.609-2.61L13.445 11H10.5a.5.5 0 0 0-.5.5"/>
@@ -300,14 +305,14 @@ def largest_decrease():
 
 #### Row {height=74%}
 ```{python}
-#| title: Treemap
+#| title: Energy Usage Map
 #| expandable: true
 @render_widget
 def display_treemap():
-    # Aggregate EnergyValue by Group and Category.
+    # Aggregate TJ energy usage by Group and Category.
     category = title_case(input.highlight_category())
     group = category + "Group"
-    eeud_subset = eeud[~pd.isna(eeud[category])].copy()
+    eeud_subset = eeud[(~pd.isna(eeud[category]))].copy()
     to_replace = ['Bus', 'Freight Rail', 'Heavy Truck', 'Light Commercial Vehicle', 'Light Passenger Vehicle', 'Medium Truck', 'Motorcycle', 'Passenger Rail', 'Plane', 'Ship', 'Very Heavy Truck']
     eeud_subset['TechnologyGroup'] = eeud_subset['TechnologyGroup'].apply(lambda g: 'Transport' if g in to_replace else g)
     data_last_year = eeud_subset[eeud_subset['Period'].isin([eeud_subset['Period'].max()])]
@@ -321,8 +326,8 @@ def display_treemap():
     # For EndUseGroup nodes, we set their parent to '' indicating they are top-level.
     groups_df = pd.DataFrame({
         group: eeud_aggregated[group].unique(),
-        category: [''] * len(eeud_aggregated[group].unique()),  # Placeholder
-        'EnergyValue': [0] * len(eeud_aggregated[group].unique()),  # Placeholder, value not used
+        category: [''] * len(eeud_aggregated[group].unique()),
+        'TJ': [eeud_aggregated[eeud_aggregated[group]==g]['TJ'].sum() for g in eeud_aggregated[group].unique()],  # [0] * len(eeud_aggregated[group].unique()),
         'id': eeud_aggregated[group].unique(),
         'parent': [input.highlight_category()] * len(eeud_aggregated[group].unique())
     })
@@ -330,24 +335,43 @@ def display_treemap():
     # Combine group nodes and category nodes.
     complete_df = pd.concat([groups_df, eeud_aggregated], ignore_index=True, sort=False)
     complete_df['label'] = complete_df[category].where(complete_df[category] != '', complete_df[group])
-    complete_df['styled_label'] = complete_df['label'].apply(lambda x: f"{x}")
     complete_df['colour'] = complete_df[category].map(eeud_colours).fillna('#FFFFFF')
 
-    # Plotting the treemap without the 'Root' node.
+    # Function to manually wrap long labels to fit
+    def split_label(label, max_chars=25):
+        words = label.split()
+        current_line = ''
+        lines = []
+        for word in words:
+            if len(current_line) + len(word) + 1 <= max_chars:
+                current_line += word + ' '
+            else:
+                lines.append(current_line.strip())
+                current_line = word + ' '
+        lines.append(current_line.strip())  # Last line
+        return '<br>'.join(lines)  # Join lines with the HTML <br> tag
+    def clean_label(label):
+        return label.replace('<br>',' ')
+
+    # Apply the split function to the labels column
+    complete_df['styled_label'] = complete_df['label'].apply(split_label)
+
+    # Plotting the treemap
     fig = go.Figure(data=[go.Treemap(
         ids=complete_df['id'],
         labels=complete_df['styled_label'],
         parents=complete_df['parent'],
         values=complete_df['TJ'].fillna(0).astype('int'),
-        marker=dict(colors=complete_df['colour']),  # Apply the colors here
-        texttemplate="<span style='font-size:24px;'>%{value}</span><br><br>%{label}",
+        #marker=dict(colors=complete_df['colour']),
+        #texttemplate="<span style='font-size:15.3px; font-weight:500;'>%{label}</span><br><span>%{value}</span>",
         textposition="middle center",
-        hoverinfo='none',
+        branchvalues="total",
+        hoverinfo='value',
+        hovertemplate='%{label}<br>%{value} TJ<extra></extra>'
     )])
-    fig.update_traces(marker_colors=[eeud_colours[parent] for parent in fig.data[-1].labels])
-
-    #fig.update_traces(marker=dict(line=dict(color='rgba(232,236,238,255)', width=1)))  # Adjust 'width' as needed for visibility
-
+   
+    fig.update_traces(marker_colors=[eeud_colours[clean_label(parent)] for parent in fig.data[-1].labels])
+    fig.update_layout(font_family="Barlow")
     fig.update_layout(margin=dict(t=0, l=0, r=0, b=0))
     fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
     fig.update_layout(paper_bgcolor='rgba(232,236,238,255)', plot_bgcolor='rgba(232,236,238,255)')
@@ -376,9 +400,9 @@ ui.input_select("explore_right_node", "To", choices=["End Use", "End Use Group",
 sectors_dict = {'Residential': ['All Residential', 'Residential', 'Residential Unallocated'],
     'Industrial': ['All Industrial', 'Construction', 'Dairy', 'Manufacturing']}
 
-ui.input_selectize('explore_sectors', "Sector", sectors_list, multiple=True,
+ui.input_selectize('explore_end_use', "End Use", end_uses_list, multiple=True,
     options={
-        'placeholder': "All Sectors",
+        'placeholder': "All End Uses",
         'plugins': ['clear_button']
     }
 )
@@ -390,19 +414,19 @@ ui.input_selectize('explore_fuels', "Fuel Type", fuels_list, multiple=True,
     }
 )
 
+ui.input_selectize('explore_sectors', "Sector", sectors_list, multiple=True,
+    options={
+        'placeholder': "All Sectors",
+        'plugins': ['clear_button']
+    }
+)
+
 ui.input_selectize('explore_technologies', "Technology", technologies_list, multiple=True,
     options={
         'placeholder': "All Technologies",
         'plugins': ['clear_button']
     }
 ) 
-
-ui.input_selectize('explore_end_use', "End Use", end_uses_list, multiple=True,
-    options={
-        'placeholder': "All End Uses",
-        'plugins': ['clear_button']
-    }
-)
 
 ui.input_slider('explore_period', "Period", min=min(years_list), max=max(years_list),
     drag_range=False, value=max(years_list), sep='')
@@ -460,6 +484,8 @@ def set_explore_bar_chart():
     input.explore_bar()
     with reactive.isolate():
         explore_chart_type.set('Bar')
+    ui.update_select('explore_left_node', label="Axis")
+    ui.update_select('explore_right_node', label="Stack")
 
 @render.ui
 def render_sankey_button():
@@ -470,6 +496,8 @@ def set_explore_sankey_chart():
     input.explore_sankey()
     with reactive.isolate():
         explore_chart_type.set('Sankey')
+    ui.update_select('explore_left_node', label="From")
+    ui.update_select('explore_right_node', label="To")
 
 ```
 
@@ -500,24 +528,29 @@ def display_explore_chart():
                 thickness = 20,
                 line = dict(width = 0),
                 label = explore_nodes['label'],
-                color = explore_nodes['color']
+                color = explore_nodes['color'],
+                hovertemplate="%{label}<br>%{value:,.0f}<extra></extra>"
                 ),
             link = dict(
                 source = explore_links['source'],
                 target = explore_links['target'],
                 value = explore_links['value'],
-                color = explore_links['color']
+                color = explore_links['color'],
+                hovertemplate="%{source.label} → %{target.label}<br>%{value:,.0f} TJ<extra></extra>"
                 )
         )])
+        fig.update_layout(font_family="Barlow")
         fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoscale'])
         fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
-        fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+        fig.update_layout(paper_bgcolor='rgba(232,236,238,255)', plot_bgcolor='rgba(232,236,238,255)')
         return fig
 
     elif explore_chart_type.get() == 'Bar':
         fig = px.bar(explore_df,
-            x='TJ', y=left_node, color=right_node if right_node != 'Proxy' else left_node, color_discrete_map=eeud_colours.to_dict()
+            x='TJ', y=left_node, color=right_node if right_node != 'Proxy' else left_node, color_discrete_map=eeud_colours.to_dict(),
+            hover_data={right_node: True}
         )
+        fig.update_traces(hovertemplate="%{y} / %{customdata[0]}<br>%{x:,.0f} TJ<extra></extra>")
         fig.update_traces(marker=dict(line=dict(color='rgba(0,0,0,0)', width=0)))
         fig.update_layout(legend=dict(
             orientation="h",
@@ -525,9 +558,10 @@ def display_explore_chart():
             xanchor="left", x=0))
         if right_node == 'Proxy':
             fig.update_layout(showlegend=False)
+        fig.update_layout(font_family="Barlow")
         fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoscale'])
         fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
-        fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+        fig.update_layout(paper_bgcolor='rgba(232,236,238,255)', plot_bgcolor='rgba(232,236,238,255)')
         return fig
 
 ``` 
@@ -550,9 +584,9 @@ ui.input_select("timeseries_display", "Values", choices=["Total", "Proportional"
 
 ```{python}
 
-ui.input_selectize('timeseries_sectors', "Sector", sectors_list, multiple=True,
+ui.input_selectize('timeseries_end_use', "End Use", end_uses_list, multiple=True,
     options={
-        'placeholder': "All Sectors",
+        'placeholder': "All End Uses",
         'plugins': ['clear_button']
     }
 )
@@ -564,16 +598,16 @@ ui.input_selectize('timeseries_fuels', "Fuel Type", fuels_list, multiple=True,
     }
 )
 
-ui.input_selectize('timeseries_technologies', "Technology", technologies_list, multiple=True,
+ui.input_selectize('timeseries_sectors', "Sector", sectors_list, multiple=True,
     options={
-        'placeholder': "All Technologies",
+        'placeholder': "All Sectors",
         'plugins': ['clear_button']
     }
 )
 
-ui.input_selectize('timeseries_end_use', "End Use", end_uses_list, multiple=True,
+ui.input_selectize('timeseries_technologies', "Technology", technologies_list, multiple=True,
     options={
-        'placeholder': "All End Uses",
+        'placeholder': "All Technologies",
         'plugins': ['clear_button']
     }
 )
@@ -651,10 +685,12 @@ timeseries_chart_type = reactive.value('Line')
 def display_timeseries_chart():
     category = title_case(input.timeseries_category())
     timeseries_df = timeseries_eeud_filtered().groupby([category, 'Period']).sum(numeric_only=True).reset_index(drop=False)
+    total = True
     if input.timeseries_display() == "Proportional":
+        total = False
         total_tj_by_period = timeseries_df.groupby('Period')['TJ'].sum().reset_index(name='TotalTJ')
         timeseries_df = pd.merge(timeseries_df, total_tj_by_period, on='Period')
-        timeseries_df['TJ'] = timeseries_df['TJ'] / timeseries_df['TotalTJ']
+        timeseries_df['TJ'] = (timeseries_df['TJ'] / timeseries_df['TotalTJ']) * 100
 
     if timeseries_chart_type.get() == 'Alluvial':
         timeseries_links, timeseries_nodes = create_alluvial_links_for_dict(timeseries_eeud_filtered(), category, 'PeriodEndDate')
@@ -673,37 +709,50 @@ def display_timeseries_chart():
                 color = timeseries_links['color']
                 )
         )])
+        fig.update_layout(font_family="Barlow")
         fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoscale'])
         fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
-        fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+        fig.update_layout(paper_bgcolor='rgba(232,236,238,255)', plot_bgcolor='rgba(232,236,238,255)')
         return fig
 
     elif timeseries_chart_type.get() == 'Line':
         fig = px.line(timeseries_df,
             y='TJ', x='Period', color=category, color_discrete_map=eeud_colours.to_dict(),
-            markers=True).update_xaxes(dtick=1)
-        fig.update_layout(yaxis=dict(title=f"{input.timeseries_display()} Energy Usage (TJ)"))
+            markers=True, hover_data={category: True}).update_xaxes(dtick=1)
+        fig.update_layout(yaxis=dict(title=f"{input.timeseries_display()} Energy Usage ({'TJ' if total else '%'})"))
         fig.update_layout(legend=dict(
             orientation="h",
             yanchor="bottom", y=1.02,
-            xanchor="left", x=0))
+            xanchor="left", x=0)
+            )
+        if total:
+            fig.update_traces(hovertemplate="%{customdata[0]} / %{x}<br>%{y:,.0f} TJ<extra></extra>")
+        else:
+            fig.update_traces(hovertemplate="%{customdata[0]} / %{x}<br>%{y:.1f}%<extra></extra>")
+        fig.update_layout(font_family="Barlow")
         fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoscale'])
         fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
-        fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+        fig.update_layout(paper_bgcolor='rgba(232,236,238,255)', plot_bgcolor='rgba(232,236,238,255)')
         return fig
 
     elif timeseries_chart_type.get() == 'Area':
         fig = px.area(timeseries_df,
             y='TJ', x='Period', color=category, color_discrete_map=eeud_colours.to_dict(),
-            markers=True).update_xaxes(dtick=1)
-        fig.update_layout(yaxis=dict(title=f"{input.timeseries_display()} Energy Usage (TJ)"))
+            markers=True, hover_data={category: True}).update_xaxes(dtick=1)
+        fig.update_layout(yaxis=dict(title=f"{input.timeseries_display()} Energy Usage ({'TJ' if total else '%'})"))
         fig.update_layout(legend=dict(
             orientation="h",
             yanchor="bottom", y=1.02,
-            xanchor="left", x=0))
+            xanchor="left", x=0)
+            )
+        if total:
+            fig.update_traces(hovertemplate="%{customdata[0]} / %{x}<br>%{y:,.0f} TJ<extra></extra>")
+        else:
+            fig.update_traces(hovertemplate="%{customdata[0]} / %{x}<br>%{y:.1f}%<extra></extra>")
+        fig.update_layout(font_family="Barlow")
         fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoscale'])
         fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
-        fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+        fig.update_layout(paper_bgcolor='rgba(232,236,238,255)', plot_bgcolor='rgba(232,236,238,255)')
         return fig
 
 ``` 
@@ -717,9 +766,9 @@ def display_timeseries_chart():
 <h5>Filter</h5>
 
 ```{python}
-ui.input_selectize('data_sectors', "Sector", sectors_list, multiple=True,
+ui.input_selectize('data_end_use', "End Use", end_uses_list, multiple=True,
     options={
-        'placeholder': "All Sectors",
+        'placeholder': "All End Uses",
         'plugins': ['clear_button']
     }
 )
@@ -731,19 +780,19 @@ ui.input_selectize('data_fuels', "Fuel Type", fuels_list, multiple=True,
     }
 )
 
+ui.input_selectize('data_sectors', "Sector", sectors_list, multiple=True,
+    options={
+        'placeholder': "All Sectors",
+        'plugins': ['clear_button']
+    }
+)
+
 ui.input_selectize('data_technologies', "Technology", technologies_list, multiple=True,
     options={
         'placeholder': "All Technologies",
         'plugins': ['clear_button']
     }
 ) 
-
-ui.input_selectize('data_end_use', "End Use", end_uses_list, multiple=True,
-    options={
-        'placeholder': "All End Uses",
-        'plugins': ['clear_button']
-    }
-)
 
 ui.input_slider('data_period', "Period Range", min=min(years_list), max=max(years_list),
     drag_range=True, value=(min(years_list), max(years_list)), sep='')
@@ -866,9 +915,9 @@ The EEUD is split into four categories – Sector, Fuel Type, End Use, and Techn
 
 #### **Find out more about the Energy End Use Database (EEUD)**
 
-To learn more about the methodology check out the document *[Energy End Use Database (EEUD) - Key insights and methodology](#about)*.
+To learn more about the methodology check out the document *[Energy End Use Database (EEUD) - Key insights and methodology](https://www.eeca.govt.nz/assets/EECA-Resources/Research-papers-guides/EECA-EEUD-Methodology-May-2024.pdf)*.
 
-The full dataset is available here: *[EEUD Data 2017-2024 April 2024](#about)*.
+The full dataset is available here: *[EEUD Data 2017-2022 May 2024](https://www.eeca.govt.nz/assets/EECA-Resources/Research-papers-guides/EEUD-Data-2017-2022-May-2024.xlsx)*.
 
 For feedback and more information, please email [info@eeca.govt.nz](mailto: info@eeca.govt.nz?subject=Energy End Use Database) with the subject line *Energy End Use Database*.
 
@@ -884,7 +933,7 @@ For feedback and more information, please email [info@eeca.govt.nz](mailto: info
 
 * 2022 data added for all sectors.
 * Dashboard redesigned and rebuilt with Quarto and Shiny for Python.
-* Released on the 13th of May 2024.
+* Released on the 31st of May 2024.
 
 **Version 1.2** 
 
@@ -902,7 +951,7 @@ For feedback and more information, please email [info@eeca.govt.nz](mailto: info
 * Initial release of the Energy End Use Database (EEUD), built with R Shiny.
 * Released on the 3rd of November 2021.
 
-Keep up to date on new data releases through the EECA Newsletter ([sign up here](#about)) and check the website frequently for updates.
+Keep up to date on new data releases through the EECA Newsletter ([sign up here](https://www.eeca.govt.nz/about/get-in-touch/sign-up-to-our-newsletters/)) and check the website frequently for updates.
 
 :::
 

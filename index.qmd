@@ -933,7 +933,7 @@ For feedback and more information, please email [info@eeca.govt.nz](mailto: info
 
 * 2022 data added for all sectors.
 * Dashboard redesigned and rebuilt with Quarto and Shiny for Python.
-* Released on the 31st of May 2024.
+* Released on the 4th of June 2024.
 
 **Version 1.2** 
 

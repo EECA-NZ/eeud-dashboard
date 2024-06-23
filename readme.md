@@ -7,8 +7,6 @@ This is a dashboard for EECA's Energy End-Use Database, built with Quarto and Sh
 [Live Production Dashboard](https://eeca-nz.shinyapps.io/eeud_dashboard_quarto/)
 [Live Development Dashboard](https://eeca-nz.shinyapps.io/eeud_dashboard_quarto_dev/)
 
-Note: This readme is a work in progress, and will be fleshed out further.
-
 ## How to install and run the dashboard locally
 
 There are two things you will need to run the dashboard: Quarto and Python. This readme will assume the latter is already installed through Anaconda.

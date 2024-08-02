@@ -29,12 +29,12 @@ eeud_colours = pd.read_csv('./data/eeud-colour-palette.csv', index_col=0, header
 eeud_colours = eeud_colours[~eeud_colours.index.duplicated()]
 eeud_colours.index = eeud_colours.index.map(lambda l: str(l).strip() if 'Unknown' not in l else l)
 
-eeud.fillna({'EndUse': 'Unknown​', 'Fuel': 'Unknown​​', 'Sector': 'Unknown​​​', 'Technology': 'Unknown​​​​',
-             'EndUseGroup': 'Unknown​​​​​', 'FuelGroup': 'Unknown​​​​​​', 'SectorGroup': 'Unknown​​​​​​​', 'TechnologyGroup': 'Unknown​​​​​​​​'}, inplace=True)
-eeud['Fuel'] = eeud['Fuel'].replace('Electricity', 'Electricity​')
-eeud['Sector'] = eeud['Sector'].replace('Residential', 'Residential​')
-eeud['EndUse'] = eeud['EndUse'].replace('Irrigation', 'Irrigation​')
-eeud['EndUse'] = eeud['EndUse'].replace('Refiners', 'Refiners​')
+fill_unknown_columns = ['EndUse', 'Fuel', 'Sector', 'Technology', 'EndUseGroup', 'FuelGroup', 'SectorGroup', 'TechnologyGroup']
+
+for column in fill_unknown_columns:
+    if column in eeud.columns:
+        eeud[column] = eeud[column].fillna('Unknown')
+
 eeud['Technology'] = eeud['Technology'].apply(lambda t: str(t).strip() if 'Unknown' not in t else t)
 
 sector_groups_list = list(eeud['SectorGroup'].dropna().sort_values().unique())
@@ -72,12 +72,20 @@ def create_sankey_links_for_dict(df, *columns):
     """
     links_list = []
     labels = []
-    
-    for i in range(len(columns)-1):
-        # For each pair of columns, create source-target pairs
-        temp_df = df.groupby([columns[i], columns[i+1]])['TJ'].sum().reset_index()
-        temp_df['source'] = temp_df[columns[i]].astype(str)
-        temp_df['target'] = temp_df[columns[i+1]].astype(str)
+
+    # Create temporary source and target columns in the DataFrame based on the provided columns
+    for i in range(len(columns) - 1):
+        # Use i to differentiate levels in multi-level Sankey diagrams
+        src_col = f'{columns[i]}_src_{i}'
+        tgt_col = f'{columns[i+1]}_tgt_{i+1}'
+
+        # Create modified columns in the DataFrame
+        df[src_col] = df[columns[i]].astype(str) + f'_src_{i}'
+        df[tgt_col] = df[columns[i+1]].astype(str) + f'_tgt_{i+1}'
+
+        # Group by these modified columns and calculate sum
+        temp_df = df.groupby([src_col, tgt_col])['TJ'].sum().reset_index()
+        temp_df.rename(columns={src_col: 'source', tgt_col: 'target'}, inplace=True)
         links_list.append(temp_df)
         labels.extend(temp_df['source'].tolist())
         labels.extend(temp_df['target'].tolist())
@@ -103,9 +111,10 @@ def create_sankey_links_for_dict(df, *columns):
         'color': links_df['source'].apply(lambda s: hex_to_rgba(eeud_colours[labels[s].split('_')[0]] if labels[s].split('_')[0] in eeud_colours else "#9CA2B0", 0.8)).tolist()
     }
 
+    # Remove suffixes and reconstruct labels for display
     nodes_dict = {
-        'label': labels,
-        'color': list(map(lambda l: hex_to_rgba(eeud_colours[l.split('_')[0]] if l.split('_')[0] in eeud_colours else "#9CA2B0", 1), labels))
+        'label': [l.rsplit('_', 2)[0] for l in labels],  # Remove the suffix while preserving the original label
+        'color': [hex_to_rgba(eeud_colours[l.rsplit('_', 2)[0]] if l.rsplit('_', 2)[0] in eeud_colours else "#9CA2B0", 1) for l in labels]
     }
 
     return link_dict, nodes_dict

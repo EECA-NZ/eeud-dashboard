@@ -29,6 +29,10 @@ eeud_colours = pd.read_csv('./data/eeud-colour-palette.csv', index_col=0, header
 eeud_colours = eeud_colours[~eeud_colours.index.duplicated()]
 eeud_colours.index = eeud_colours.index.map(lambda l: str(l).strip() if 'Unknown' not in l else l)
 
+eeud_colours2 = pd.read_csv('./data/eeud-colour-palette-by-dimension.csv', header=0, dtype=str).squeeze("columns").set_index(['Label', 'Dimension'])
+eeud_colours2 = eeud_colours2[~eeud_colours2.index.duplicated()]
+eeud_colours2.index = eeud_colours2.index.map(lambda l: str(l).strip() if 'Unknown' not in l else l)
+
 fill_unknown_columns = ['EndUse', 'Fuel', 'Sector', 'Technology', 'EndUseGroup', 'FuelGroup', 'SectorGroup', 'TechnologyGroup']
 
 for column in fill_unknown_columns:
@@ -72,9 +76,12 @@ def create_sankey_links_for_dict(df, *columns):
     """
     links_list = []
     labels = []
+    label_colors = []
 
     # Create temporary source and target columns in the DataFrame based on the provided columns
     for i in range(len(columns) - 1):
+
+        # import pdb; pdb.set_trace()
         # Use i to differentiate levels in multi-level Sankey diagrams
         src_col = f'{columns[i]}_src_{i}'
         tgt_col = f'{columns[i+1]}_tgt_{i+1}'
@@ -102,19 +109,32 @@ def create_sankey_links_for_dict(df, *columns):
     
     # Aggregate and sum 'value' for each unique source-target pair
     links_df = links_df.groupby(['source', 'target'], as_index=False)['TJ'].sum()
-    
-    # Format for Sankey diagram
+
+    # Assemble the lists and organize for Sankey diagram
+    node_labels = [l.rsplit('_', 2)[0] for l in labels]  # Remove the suffix while preserving the original label
+    colormap = lambda l: hex_to_rgba(eeud_colours[l] if l in eeud_colours else "#9CA2B0", 0.8)
+    source = links_df['source'].tolist()
+    target = links_df['target'].tolist()
+    value = links_df['TJ'].tolist()
+
+    # Applying the colormap to the sources for link colors
+    link_color = [colormap(node_labels[s]) for s in source]
+
+    # Applying the colormap to all node labels for node colors
+    node_color = [colormap(l) for l in node_labels]
+
+    # Organize link information
     link_dict = {
-        'source': links_df['source'].tolist(),
-        'target': links_df['target'].tolist(),
-        'value': links_df['TJ'].tolist(),
-        'color': links_df['source'].apply(lambda s: hex_to_rgba(eeud_colours[labels[s].split('_')[0]] if labels[s].split('_')[0] in eeud_colours else "#9CA2B0", 0.8)).tolist()
+        'source': source,
+        'target': target,
+        'value': value,
+        'color': link_color
     }
 
-    # Remove suffixes and reconstruct labels for display
+    # Organize node information
     nodes_dict = {
-        'label': [l.rsplit('_', 2)[0] for l in labels],  # Remove the suffix while preserving the original label
-        'color': [hex_to_rgba(eeud_colours[l.rsplit('_', 2)[0]] if l.rsplit('_', 2)[0] in eeud_colours else "#9CA2B0", 1) for l in labels]
+        'label': node_labels,
+        'color': node_color
     }
 
     return link_dict, nodes_dict

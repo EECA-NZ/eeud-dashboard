@@ -25,16 +25,16 @@ import numpy as np
 
 eeud = pd.read_csv('./data/EEUD-03042024.csv').set_index('Row')
 eeud['PeriodEndDate'] = pd.to_datetime(eeud['PeriodEndDate'])
-eeud_colours = pd.read_csv('./data/eeud-colour-palette.csv', index_col=0, header=0, dtype=str).squeeze("columns")
-eeud_colours = eeud_colours[~eeud_colours.index.duplicated()]
-eeud_colours.index = eeud_colours.index.map(lambda l: str(l).strip() if 'Unknown' not in l else l)
 
-eeud.fillna({'EndUse': 'Unknown​', 'Fuel': 'Unknown​​', 'Sector': 'Unknown​​​', 'Technology': 'Unknown​​​​',
-             'EndUseGroup': 'Unknown​​​​​', 'FuelGroup': 'Unknown​​​​​​', 'SectorGroup': 'Unknown​​​​​​​', 'TechnologyGroup': 'Unknown​​​​​​​​'}, inplace=True)
-eeud['Fuel'] = eeud['Fuel'].replace('Electricity', 'Electricity​')
-eeud['Sector'] = eeud['Sector'].replace('Residential', 'Residential​')
-eeud['EndUse'] = eeud['EndUse'].replace('Irrigation', 'Irrigation​')
-eeud['EndUse'] = eeud['EndUse'].replace('Refiners', 'Refiners​')
+eeud_colours = pd.read_csv('./data/eeud-colour-palette.csv', header=0, dtype=str).squeeze("columns").set_index(['Label', 'Dimension'])
+eeud_colours = eeud_colours[~eeud_colours.index.duplicated()]
+
+fill_unknown_columns = ['EndUse', 'Fuel', 'Sector', 'Technology', 'EndUseGroup', 'FuelGroup', 'SectorGroup', 'TechnologyGroup']
+
+for column in fill_unknown_columns:
+    if column in eeud.columns:
+        eeud[column] = eeud[column].fillna('Unknown')
+
 eeud['Technology'] = eeud['Technology'].apply(lambda t: str(t).strip() if 'Unknown' not in t else t)
 
 sector_groups_list = list(eeud['SectorGroup'].dropna().sort_values().unique())
@@ -57,6 +57,27 @@ def hex_to_rgba(hex, alpha=1):
     hex = hex.replace('#','')
     return f"rgba{tuple([int(hex[i:i+2], 16) for i in (0, 2, 4)] + [alpha])}"
 
+def colormap(label, dimension, default="#9CA2B0"):
+    """
+    Attempt to retrieve the color from the DataFrame
+
+    If the (label, dimension) pair doesn't exist, return a default color
+    """
+    try:
+        color = eeud_colours.at[(label, dimension), 'Colour']
+    except KeyError:
+        color = default
+    return color
+
+def color_dict_for(dimension):
+    """
+    Using the eeud_colours dataframe, assemble a colour dictionary
+    for the chosen dimension.
+    """
+    fuel_group_colours = eeud_colours.xs(dimension, level='Dimension')
+    fuel_group_dict = fuel_group_colours['Colour'].to_dict()
+    return fuel_group_dict
+
 def create_sankey_links_for_dict(df, *columns):
     """
     Creates a dictionary suitable for generating Sankey diagram links with indices corresponding to labels.
@@ -72,40 +93,70 @@ def create_sankey_links_for_dict(df, *columns):
     """
     links_list = []
     labels = []
-    
-    for i in range(len(columns)-1):
-        # For each pair of columns, create source-target pairs
-        temp_df = df.groupby([columns[i], columns[i+1]])['TJ'].sum().reset_index()
-        temp_df['source'] = temp_df[columns[i]].astype(str)
-        temp_df['target'] = temp_df[columns[i+1]].astype(str)
-        links_list.append(temp_df)
+    label_dim_colors = []
+
+    # Create temporary source and target columns in the DataFrame based on the provided columns
+    for i in range(len(columns) - 1):
+
+        # Create renamed columns in the DataFrame. Group by these and calculate sum.
+        src = f'{columns[i]}'
+        tgt = f'{columns[i+1]}'
+        df['source'] = df[src].astype(str)
+        df['target'] = df[tgt].astype(str)
+        temp_df = df.groupby(['source', 'target'])['TJ'].sum().reset_index()
+
+        # Assemble full list of nodes (identified by label + dimension) and their colours
         labels.extend(temp_df['source'].tolist())
         labels.extend(temp_df['target'].tolist())
-    
+        for lbl in temp_df['source']:
+            col = colormap(lbl, src, default="#9CA2B0")
+            label_dim_colors.append((lbl, src, col))
+        for lbl in temp_df['target']:
+            col = colormap(lbl, tgt, default="#9CA2B0")
+            label_dim_colors.append((lbl, tgt, col))
+
+        # Identify nodes by both the label and the dimension (column name)
+        temp_df['source'] = temp_df.apply(lambda row: (row['source'], src), axis=1)
+        temp_df['target'] = temp_df.apply(lambda row: (row['target'], tgt), axis=1)
+        links_list.append(temp_df)
+
     # Remove duplicate labels and sort
-    labels = sorted(set(labels))
+    label_dim_colors = sorted(set(label_dim_colors))
+
+    # Identify nodes by their label (e.g. 'Electricity') and dimension (e.g. 'Fuel').
+    nodes = [(x[0], x[1]) for x in label_dim_colors]
+    node_labels = [x[0] for x in label_dim_colors]
+    node_colors = [x[2] for x in label_dim_colors]
     
     # Create the final links DataFrame
     links_df = pd.concat(links_list, ignore_index=True)
-    
+
     # Map 'source' and 'target' to their indices in the labels list
-    links_df['source'] = links_df['source'].apply(lambda x: labels.index(x))
-    links_df['target'] = links_df['target'].apply(lambda x: labels.index(x))
+    links_df['source'] = links_df['source'].apply(lambda x: nodes.index(x))
+    links_df['target'] = links_df['target'].apply(lambda x: nodes.index(x))
     
     # Aggregate and sum 'value' for each unique source-target pair
     links_df = links_df.groupby(['source', 'target'], as_index=False)['TJ'].sum()
-    
-    # Format for Sankey diagram
+
+    # Assemble the lists and organize for Sankey diagram
+    source = links_df['source'].tolist()
+    target = links_df['target'].tolist()
+    value = links_df['TJ'].tolist()
+    link_colors = [hex_to_rgba(node_colors[s], 0.8) for s in source]
+    node_colors = [hex_to_rgba(c, 1.0) for c in node_colors]
+
+    # Organize link information
     link_dict = {
-        'source': links_df['source'].tolist(),
-        'target': links_df['target'].tolist(),
-        'value': links_df['TJ'].tolist(),
-        'color': links_df['source'].apply(lambda s: hex_to_rgba(eeud_colours[labels[s].split('_')[0]] if labels[s].split('_')[0] in eeud_colours else "#9CA2B0", 0.8)).tolist()
+        'source': source,
+        'target': target,
+        'value': value,
+        'color': link_colors
     }
 
+    # Organize node information
     nodes_dict = {
-        'label': labels,
-        'color': list(map(lambda l: hex_to_rgba(eeud_colours[l.split('_')[0]] if l.split('_')[0] in eeud_colours else "#9CA2B0", 1), labels))
+        'label': node_labels,
+        'color': node_colors
     }
 
     return link_dict, nodes_dict
@@ -142,20 +193,34 @@ def create_alluvial_links_for_dict(df, category_column, date_column, date_freq='
     # Map 'source' and 'target' to their indices in the labels list
     grouped_df['source'] = grouped_df['source'].apply(lambda x: labels.index(x))
     grouped_df['target'] = grouped_df['target'].apply(lambda x: labels.index(x))
-    
+
+    source = grouped_df['source'].tolist()[:-1] # Exclude the last mapping as it has no next period
+    target = grouped_df['target'].tolist()[:-1]
+    value = grouped_df['TJ'].tolist()[:-1]
+    node_labels = list(map(lambda l: l.replace('_', ' '), labels))
+
+    # TODO - this function isn't obviously being used. Hence following lines haven't been tested. Can we drop this function?
+    #link_color = grouped_df['source'].apply(lambda s: hex_to_rgba(eeud_colours[labels[s].split('_')[0]] if labels[s].split('_')[0] in eeud_colours else "#CBCDD5", 2/3)).tolist()
+    link_color = [colormap(x, category_column, default="#CBCDD5") for x in grouped_df['source']]
+    link_color = [hex_to_rgba(x, 2/3) for x in link_color]
+
+    # TODO - this function isn't obviously being used. Hence following lines haven't been tested. Can we drop this function?
+    #node_color = list(map(lambda l: hex_to_rgba(eeud_colours[l.split('_')[0]] if l.split('_')[0] in eeud_colours else "#CBCDD5", 1), labels))
+    node_color = [colormap(x, category_column, default="#CBCDD5") for x in labels]
+    node_color = [hex_to_rgba(x, 1) for x in node_color]
+
     # Prepare the link and nodes dictionaries
     link_dict = {
-        'source': grouped_df['source'].tolist()[:-1], # Exclude the last mapping as it has no next period
-        'target': grouped_df['target'].tolist()[:-1],
-        'value': grouped_df['TJ'].tolist()[:-1],
-        'color': grouped_df['source'].apply(lambda s: hex_to_rgba(eeud_colours[labels[s].split('_')[0]] if labels[s].split('_')[0] in eeud_colours else "#CBCDD5", 2/3)).tolist()
+        'source': source,
+        'target': target,
+        'value': value,
+        'color': link_color
     }
 
     nodes_dict = {
-        'label': list(map(lambda l: l.replace('_', ' '), labels)),
-        'color': list(map(lambda l: hex_to_rgba(eeud_colours[l.split('_')[0]] if l.split('_')[0] in eeud_colours else "#CBCDD5", 1), labels))
+        'label': node_labels,
+        'color': node_color
     }
-
     return link_dict, nodes_dict
 
 ```
@@ -209,9 +274,8 @@ def display_trend():
     total_tj_by_period = grouped.groupby('Period')['TJ'].sum().reset_index(name='TotalTJ')
     merged = pd.merge(grouped, total_tj_by_period, on='Period')
     merged['TJ_Proportion'] = (merged['TJ'] / merged['TotalTJ']) * 100
-
     fig = px.area(merged,
-        y='TJ', x='Period', color=group, color_discrete_map=eeud_colours.to_dict(), 
+        y='TJ', x='Period', color=group, color_discrete_map=color_dict_for(group),
         markers=True, hover_data={group: True, 'TJ_Proportion': True}).update_xaxes(dtick=1)
     fig.update_traces(hovertemplate="%{customdata[0]} / %{x}<br>%{y:,.0f} TJ (%{customdata[1]:.1f}%)<extra></extra>")
     fig.update_layout(yaxis=dict(title=f"Total Energy Usage (TJ)"))
@@ -322,6 +386,7 @@ def display_treemap():
     # Add an 'id' for each Category combining it with Group to ensure uniqueness.
     eeud_aggregated['id'] = eeud_aggregated[group] + '-' + eeud_aggregated[category]
     eeud_aggregated['parent'] = eeud_aggregated[group]
+    eeud_aggregated['colour'] = eeud_aggregated[category].map(color_dict_for(category)).fillna('#FFFFFF')
 
     # For EndUseGroup nodes, we set their parent to '' indicating they are top-level.
     groups_df = pd.DataFrame({
@@ -331,11 +396,11 @@ def display_treemap():
         'id': eeud_aggregated[group].unique(),
         'parent': [input.highlight_category()] * len(eeud_aggregated[group].unique())
     })
+    groups_df['colour'] = groups_df[group].map(color_dict_for(group)).fillna('#FFFFFF')
 
     # Combine group nodes and category nodes.
     complete_df = pd.concat([groups_df, eeud_aggregated], ignore_index=True, sort=False)
     complete_df['label'] = complete_df[category].where(complete_df[category] != '', complete_df[group])
-    complete_df['colour'] = complete_df[category].map(eeud_colours).fillna('#FFFFFF')
 
     # Function to manually wrap long labels to fit
     def split_label(label, max_chars=25):
@@ -369,8 +434,8 @@ def display_treemap():
         hoverinfo='value',
         hovertemplate='%{label}<br>%{value} TJ<extra></extra>'
     )])
-   
-    fig.update_traces(marker_colors=[eeud_colours[clean_label(parent)] for parent in fig.data[-1].labels])
+
+    fig.update_traces(marker_colors=complete_df['colour'])
     fig.update_layout(font_family="Barlow")
     fig.update_layout(margin=dict(t=0, l=0, r=0, b=0))
     fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
@@ -547,7 +612,9 @@ def display_explore_chart():
 
     elif explore_chart_type.get() == 'Bar':
         fig = px.bar(explore_df,
-            x='TJ', y=left_node, color=right_node if right_node != 'Proxy' else left_node, color_discrete_map=eeud_colours.to_dict(),
+            x='TJ', y=left_node,
+            color=right_node if right_node != 'Proxy' else left_node,
+            color_discrete_map=color_dict_for(right_node) if right_node != 'Proxy' else color_dict_for(left_node),
             hover_data={right_node: True}
         )
         fig.update_traces(hovertemplate="%{y} / %{customdata[0]}<br>%{x:,.0f} TJ<extra></extra>")
@@ -717,7 +784,8 @@ def display_timeseries_chart():
 
     elif timeseries_chart_type.get() == 'Line':
         fig = px.line(timeseries_df,
-            y='TJ', x='Period', color=category, color_discrete_map=eeud_colours.to_dict(),
+            y='TJ', x='Period', color=category,
+            color_discrete_map=color_dict_for(category),
             markers=True, hover_data={category: True}).update_xaxes(dtick=1)
         fig.update_layout(yaxis=dict(title=f"{input.timeseries_display()} Energy Usage ({'TJ' if total else '%'})"))
         fig.update_layout(legend=dict(
@@ -737,7 +805,8 @@ def display_timeseries_chart():
 
     elif timeseries_chart_type.get() == 'Area':
         fig = px.area(timeseries_df,
-            y='TJ', x='Period', color=category, color_discrete_map=eeud_colours.to_dict(),
+            y='TJ', x='Period', color=category,
+            color_discrete_map=color_dict_for(category),
             markers=True, hover_data={category: True}).update_xaxes(dtick=1)
         fig.update_layout(yaxis=dict(title=f"{input.timeseries_display()} Energy Usage ({'TJ' if total else '%'})"))
         fig.update_layout(legend=dict(

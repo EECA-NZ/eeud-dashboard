@@ -20,11 +20,13 @@ EndUse,Pumping,#ffa9a3
 EndUse,Refiners,#9ca2b0
 EndUse,Refrigeration,#96ded0
 EndUse,Space Cooling,#9ee2d6
+EndUse,Unknown,#CBCDD5
 EndUseGroup,Electronics and Lighting,#164057
 EndUseGroup,Heating/Cooling,#41B496
 EndUseGroup,Iron and Steel,#3C4C49
 EndUseGroup,Mobile Motive Power,#E94E24
 EndUseGroup,Stationary Motive Power,#ED6D63
+EndUseGroup,Unknown,#9CA2B0
 Fuel,Electricity,#425970
 Fuel,Av. Fuel/Kero,#eb5e36
 Fuel,Coal,#ee6f48
@@ -37,9 +39,11 @@ Fuel,Biogas,#58c0a6
 Fuel,Geothermal,#70cbb6
 Fuel,Solar,#87d6c6
 Fuel,Wood,#9ee2d6
+Fuel,Unknown,#CBCDD5
 FuelGroup,Renewables,#41B496
 FuelGroup,Electricity,#164057
 FuelGroup,Fossil Fuels,#E94E24
+FuelGroup,Unknown,#9CA2B0
 Sector,Accommodation and Food Services,#1f475d
 Sector,"Agriculture, Forestry and Fishing",#3C4C49
 Sector,Air Transport,#5e8788
@@ -85,11 +89,13 @@ Sector,"Transport, Postal and Warehousing (Commercial - Non-Transport)",#8a95a4
 Sector,Wholesale and Retail Trade - Non Food,#9ca2b0
 Sector,Wholesale Trade - Food,#939baa
 Sector,Wood Product Manufacturing,#f9c0a3
+Sector,Unknown,#CBCDD5
 SectorGroup,"Agriculture, Forestry and Fishing",#3C4C49
 SectorGroup,Commercial,#164057
 SectorGroup,Industrial,#E94E24
 SectorGroup,Residential,#41B496
 SectorGroup,Transport,#447474
+SectorGroup,Unknown,#9CA2B0
 Technology,Air Compressors,#234a60
 Technology,Battery Electric Vehicle,#588384
 Technology,Boiler Systems,#45b699
@@ -133,6 +139,7 @@ Technology,Refrigeration Systems,#9ae0d3
 Technology,Resistance Heater,#9ee2d6
 Technology,Stationary Engine,#ffc6c2
 Technology,Turbine Engine,#aac1c2
+Technology,Unknown,#CBCDD5
 TechnologyGroup,Bus,#447474
 TechnologyGroup,Electronics and Lights,#164057
 TechnologyGroup,Freight Rail,#447474
@@ -148,3 +155,4 @@ TechnologyGroup,Plane,#447474
 TechnologyGroup,Ship,#447474
 TechnologyGroup,Stationary Motors,#ED6D63
 TechnologyGroup,Very Heavy Truck,#447474
+TechnologyGroup,Unknown,#9CA2B0

@@ -87,64 +87,63 @@ def create_sankey_links_for_dict(df, *columns):
     """
     links_list = []
     labels = []
-    label_colors = []
+    label_dim_colors = []
 
     # Create temporary source and target columns in the DataFrame based on the provided columns
     for i in range(len(columns) - 1):
 
-        # Use i to differentiate levels in multi-level Sankey diagrams
+        # Create renamed columns in the DataFrame. Group by these and calculate sum.
         src = f'{columns[i]}'
         tgt = f'{columns[i+1]}'
-        src_col = f'{src}_src_{i}'
-        tgt_col = f'{tgt}_tgt_{i+1}'
+        df['source'] = df[src].astype(str)
+        df['target'] = df[tgt].astype(str)
+        temp_df = df.groupby(['source', 'target'])['TJ'].sum().reset_index()
 
-        # Create modified columns in the DataFrame
-        df[src_col] = df[columns[i]].astype(str) + f'_src_{i}'
-        df[tgt_col] = df[columns[i+1]].astype(str) + f'_tgt_{i+1}'
-
-        # Group by these modified columns and calculate sum
-        temp_df = df.groupby([src_col, tgt_col])['TJ'].sum().reset_index()
-        temp_df.rename(columns={src_col: 'source', tgt_col: 'target'}, inplace=True)
-        links_list.append(temp_df)
+        # Assemble full list of nodes (identified by label + dimension) and their colours
         labels.extend(temp_df['source'].tolist())
         labels.extend(temp_df['target'].tolist())
         for lbl in temp_df['source']:
-            col = colormap(lbl.rsplit('_', 2)[0], src)
-            label_colors.append((lbl, col))
+            col = colormap(lbl, src)
+            label_dim_colors.append((lbl, src, col))
         for lbl in temp_df['target']:
-            col = colormap(lbl.rsplit('_', 2)[0], tgt)
-            label_colors.append((lbl, col))
+            col = colormap(lbl, tgt)
+            label_dim_colors.append((lbl, tgt, col))
+
+        # Identify nodes by both the label and the dimension (column name)
+        temp_df['source'] = temp_df.apply(lambda row: (row['source'], src), axis=1)
+        temp_df['target'] = temp_df.apply(lambda row: (row['target'], tgt), axis=1)
+        links_list.append(temp_df)
 
     # Remove duplicate labels and sort
-    label_colors = sorted(set(label_colors))
-    node_labels = [x[0] for x in label_colors]
-    node_colors = [x[1] for x in label_colors]
+    label_dim_colors = sorted(set(label_dim_colors))
+
+    # Identify nodes by their label (e.g. 'Electricity') and dimension (e.g. 'Fuel').
+    nodes = [(x[0], x[1]) for x in label_dim_colors]
+    node_labels = [x[0] for x in label_dim_colors]
+    node_colors = [x[2] for x in label_dim_colors]
     
     # Create the final links DataFrame
     links_df = pd.concat(links_list, ignore_index=True)
 
     # Map 'source' and 'target' to their indices in the labels list
-    links_df['source'] = links_df['source'].apply(lambda x: node_labels.index(x))
-    links_df['target'] = links_df['target'].apply(lambda x: node_labels.index(x))
+    links_df['source'] = links_df['source'].apply(lambda x: nodes.index(x))
+    links_df['target'] = links_df['target'].apply(lambda x: nodes.index(x))
     
     # Aggregate and sum 'value' for each unique source-target pair
     links_df = links_df.groupby(['source', 'target'], as_index=False)['TJ'].sum()
 
     # Assemble the lists and organize for Sankey diagram
-    src = links_df['source'].tolist()
-    tgt = links_df['target'].tolist()
-    val = links_df['TJ'].tolist()
-    link_colors = [hex_to_rgba(node_colors[s], 0.8) for s in src]
+    source = links_df['source'].tolist()
+    target = links_df['target'].tolist()
+    value = links_df['TJ'].tolist()
+    link_colors = [hex_to_rgba(node_colors[s], 0.8) for s in source]
     node_colors = [hex_to_rgba(c, 1.0) for c in node_colors]
-
-    # Remove the suffix which was used to track levels
-    node_labels = [x.rsplit('_', 2)[0] for x in node_labels]
 
     # Organize link information
     link_dict = {
-        'source': src,
-        'target': tgt,
-        'value': val,
+        'source': source,
+        'target': target,
+        'value': value,
         'color': link_colors
     }
 

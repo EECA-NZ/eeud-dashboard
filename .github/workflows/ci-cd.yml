@@ -105,9 +105,10 @@ jobs:
 
          - name: Deploy to Production
            run: |
+              RELEASE_VERSION="${RELEASE_VERSION//./-}"
               rsconnect deploy shiny . \
                 --name "$SHINYAPPS_NAME" \
                 --title "eeud-dashboard-quarto_$RELEASE_VERSION"
            env:
               SHINYAPPS_NAME: ${{ secrets.SHINYAPPS_NAME }}
-              RELEASE_VERSION: ${{ env.RELEASE_VERSION//./- }}
+              RELEASE_VERSION: ${{ env.RELEASE_VERSION }}

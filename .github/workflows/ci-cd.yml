@@ -99,13 +99,16 @@ jobs:
               SHINYAPPS_TOKEN: ${{ secrets.SHINYAPPS_TOKEN }}
               SHINYAPPS_SECRET: ${{ secrets.SHINYAPPS_SECRET }}
 
+         - name: Extract tag name
+           id: tag
+           run: echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
          - name: Deploy to Production
            run: |
+              RELEASE_VERSION="${RELEASE_VERSION//./-}"
               rsconnect deploy shiny . \
                 --name "$SHINYAPPS_NAME" \
-                --app-id "$PROD_APP_ID"
+                --title "eeud-dashboard-quarto_$RELEASE_VERSION"
            env:
               SHINYAPPS_NAME: ${{ secrets.SHINYAPPS_NAME }}
-              PROD_APP_ID: ${{ secrets.PROD_APP_ID }}
-
-              
+              RELEASE_VERSION: ${{ env.RELEASE_VERSION }}

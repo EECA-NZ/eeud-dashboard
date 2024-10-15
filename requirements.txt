@@ -1,5 +1,5 @@
 # Dash Packages: these are required for general quarto/shiny functionality, apply these to all dashboards.
-htmltools @ git+https://github.com/posit-dev/py-htmltools.git
+htmltools @ git+https://github.com/posit-dev/py-htmltools@main
 ipykernel @ git+https://github.com/ipython/ipykernel.git
 quarto @ git+https://github.com/quarto-dev/quarto-python.git
 shiny @ git+https://github.com/posit-dev/py-shiny.git

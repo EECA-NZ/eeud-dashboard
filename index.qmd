@@ -5,23 +5,27 @@ format:
   dashboard:
     theme: "eeca.scss"
     expandable: false
-    include-in-header: google-analytics.html
+    include-in-header: www/google-analytics.html
 server: shiny
 ---
 
 ```{python}
-import re
+# Built-in modules
+import asyncio
+from datetime import date
 import math
+import random
+import re
+
+# Additional modules, ensure these are added to the requirements file
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+
+# Dashboard modules
 from shiny import render, reactive, ui
 from shinywidgets import render_widget, render_plotly
-from faicons import icon_svg
-import asyncio
-import random
-from datetime import date
-import numpy as np
 
 eeud = pd.read_csv('./data/EEUD-03042024.csv').set_index('Row')
 eeud['PeriodEndDate'] = pd.to_datetime(eeud['PeriodEndDate'])

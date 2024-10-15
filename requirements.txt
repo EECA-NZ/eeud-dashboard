@@ -2,6 +2,7 @@
 htmltools @ git+https://github.com/posit-dev/py-htmltools@main
 ipykernel @ git+https://github.com/ipython/ipykernel.git
 quarto @ git+https://github.com/quarto-dev/quarto-python.git
+rsconnect-python @ git+https://github.com/posit-dev/rsconnect-python.git
 shiny @ git+https://github.com/posit-dev/py-shiny.git
 shinywidgets @ git+https://github.com/posit-dev/py-shinywidgets.git
 

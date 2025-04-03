@@ -9,4 +9,4 @@ shinywidgets @ git+https://github.com/posit-dev/py-shinywidgets.git
 # Data Packages: these are required for dashboard-specific manipulation and visualisation of the datasets.
 numpy
 pandas
-plotly
+plotly==5.24.1

@@ -27,7 +27,7 @@ import plotly.graph_objects as go
 from shiny import render, reactive, ui
 from shinywidgets import render_widget, render_plotly
 
-eeud = pd.read_csv('./data/EEUD-03042024.csv').set_index('Row')
+eeud = pd.read_csv('./data/EEUD-12032025.csv').set_index('Row')
 eeud['PeriodEndDate'] = pd.to_datetime(eeud['PeriodEndDate'])
 
 eeud_colours = pd.read_csv('./data/eeud-colour-palette.csv', header=0, dtype=str).squeeze("columns").set_index(['Label', 'Dimension'])
@@ -236,7 +236,7 @@ def create_alluvial_links_for_dict(df, category_column, date_column, date_freq='
 ### Column
 
 #### Row {.toolbar}
-<div style="flex-grow: 1; text-align: left;"><p style="font-size: 1rem; padding-top: 1rem; line-height: 0px;">Values presented for 2022</p></div>
+<div style="flex-grow: 1; text-align: left;"><p style="font-size: 1rem; padding-top: 1rem; line-height: 0px;">Values presented for 2023</p></div>
 <div style="flex-grow: 0; text-align: right; padding-left: 0.375px;">
 ```{python}
 ui.input_select("highlight_category", "Showcase", choices=["End Use", "Fuel", "Sector", "Technology"], selected="Fuel")
@@ -913,127 +913,4 @@ async def download_data_filtered_data():
 @render.data_frame
 def dataview():
     return render.DataGrid(data_eeud_filtered().drop(['SectorANZSIC', 'PeriodEndDate', 'Transport'], axis=1), height="100%", width="100%", summary=False)
-``` 
-
-# About
-
-## Row
-
-### Column
-
-::: {.card .borderless .fill}
-
-### **Energy End Use Database (EEUD)**
-
-<br/>
-
-<p>Energy End Use Database (EEUD) is a unique New Zealand data asset maintained by Energy Efficiency and Conservation Authority (EECA) enabling insights and analysis of energy use across sectors and technology by government, industry, and academia.</p>
-
-<p>The EEUD provides annual estimates of how energy is used across the New Zealand economy. Delivered energy estimates are provided for fuel types, sectors, end uses and technologies. The current published data covers years 2017 to 2022. The data is always released for the previous year soon after the MBIE Energy Balances are released.</p>
-
-<p>Energy use estimates are derived using a *top down* approach based on MBIE's annual high-level sector/fuel energy demand data and proportioned into further disaggregated sectors, end use applications and technology values using *bottom up* data held by EECA.</p>
-
-#### **Short guide on categories in the database**
-
-The EEUD is split into four categories – Sector, Fuel Type, End Use, and Technology. Each category has two levels (group level and disaggregated level), as tabled below with examples. The levels are shown in the tool as filter options in the dropdown boxes (i.e., the user can select to view the data by Sector Group, or by Sector for more disaggregation. For complete lists refer to the documentation linked below.
-<table>
-<thead>
-  <tr>
-    <th>Category</th>
-    <th>Level</th>
-    <th>Examples</th>
-  </tr>
-</thead>
-<tbody>
-  <tr>
-    <td rowspan="2">Sector</td>
-    <td>Sector Group</td>
-    <td>Industrial, Residential</td>
-  </tr>
-  <tr>
-    <td>Sector</td>
-    <td>Dairy Product Manufacturing, Mining</td>
-  </tr>
-  <tr>
-    <td rowspan="2">Fuel Type</td>
-    <td>Fuel Group</td>
-    <td>Fossil Fuels (direct use), Renewables (direct use), Electricity (direct use)</td>
-  </tr>
-  <tr>
-    <td>Fuel</td>
-    <td>Coal, Natural Gas, Electricity</td>
-  </tr>
-  <tr>
-    <td rowspan="2">End Use</td>
-    <td>End Use Group</td>
-    <td>Heating, Electronics and Lighting</td>
-  </tr>
-  <tr>
-    <td>End Use</td>
-    <td>Low Temperature Heat (<100 C), Water Heating, Lighting</td>
-  </tr>
-  <tr>
-    <td rowspan="2">Technology</td>
-    <td>Technology Group</td>
-    <td>Heating/Cooling Devices, Stationary Motors</td>
-  </tr>
-  <tr>
-    <td>Technology</td>
-    <td>Boiler Systems, Resistance Heaters</td>
-  </tr>
-</tbody>
-</table>
-
-&nbsp;
-
-#### **Find out more about the Energy End Use Database (EEUD)**
-
-To learn more about the methodology check out the document *[Energy End Use Database (EEUD) - Key insights and methodology](https://www.eeca.govt.nz/assets/EECA-Resources/Research-papers-guides/EECA-EEUD-Methodology-May-2024.pdf)*.
-
-The full dataset is available here: *[EEUD Data 2017-2022 May 2024](https://www.eeca.govt.nz/assets/EECA-Resources/Research-papers-guides/EEUD-Data-2017-2022-May-2024.xlsx)*.
-
-For feedback and more information, please email [info@eeca.govt.nz](mailto: info@eeca.govt.nz?subject=Energy End Use Database) with the subject line *Energy End Use Database*.
-
-:::
-
-### {.sidebar width=40%}
-
-::: {.card .flow}
-
-##### **Release notes**
-
-**Version 1.3**
-
-* 2022 data added for all sectors.
-* Dashboard redesigned and rebuilt with Quarto and Shiny for Python.
-* Released on the 6th of June 2024.
-
-**Version 1.2** 
-
-* 2021 data added for all sectors. 
-* Released on the 23rd of March 2023.
-
-**Version 1.1**
-
-* Transport data added to the tool, allowing users to split by Vehicle Type, Technology and Fuel Type. 
-* For Stationary Energy, Heating/Cooling was split into two separate categories. 
-* Released on the 20th of April 2022.
-
-**Version 1.0**
-
-* Initial release of the Energy End Use Database (EEUD), built with R Shiny.
-* Released on the 3rd of November 2021.
-
-Keep up to date on new data releases through the EECA Newsletter ([sign up here](https://www.eeca.govt.nz/about/get-in-touch/sign-up-to-our-newsletters/)) and check the website frequently for updates.
-
-:::
-
-::: {.card .flow}
-
-<br/>
-
-<img src="https://www.data.govt.nz/assets/Uploads/CCANZ-logo__ScaleWidthWzc5NV0.png" alt="Creative Commons Aotearoa New Zealand" height="64px" style="mix-blend-mode: multiply;"/>
-&nbsp;
-<img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Creative_commons_license_with_attribution.png" alt="CC BY" height="52px" style="vertical-align: top; padding-top: 6px;"/><br/>
-This work is licensed under a Creative Commons Attribution 4.0 New Zealand License.
-:::
+```

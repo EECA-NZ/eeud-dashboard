@@ -106,9 +106,14 @@ body{
     }    
 }
 
-
 .dashboard-page {
     background-color: $white !important;
+}
+
+.html-fill-item .html-fill-container .bslib-grid {
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+    padding-bottom: 0px !important;
 }
 
 .card {

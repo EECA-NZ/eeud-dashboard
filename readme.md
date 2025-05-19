@@ -18,6 +18,11 @@ At the time of writing, [shinyapps.io only supports python 3.7.13, 3.8.13, 3.9.1
 -  **Create** a Python 3.9.x Anaconda environment `conda create -n eeud python=3.9` and **activate** it `conda activate eeud`.
 -  **Navigate** your terminal into the project directory if you have not already done so.
 -  **Install** required Python libraries `python -m pip install -r requirements.txt`.
+-  **Install** quarto
+```bash
+wget https://quarto.org/download/latest/quarto-linux-amd64.deb
+sudo dpkg -i quarto-linux-amd64.deb
+```
 -  **Render** the quarto document `quarto render index.qmd`. In this instance, `quarto` runs the CLI tool we installed earlier, and renders the dashboard, writing out a number of new files, including an html file and an app.py file.
 -  **Host** the shiny app `shiny run app.py`. In this instance, `shiny` executes a runtime package that is part of our Python environment, installed from our requirements.
 

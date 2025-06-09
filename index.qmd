@@ -5,7 +5,10 @@ format:
   dashboard:
     theme: "eeca.scss"
     expandable: false
-    include-in-header: www/google-analytics.html
+    include-in-header: 
+        - file: www/google-analytics.html
+        - file: www/heap-analytics.js
+        - file: www/pendo-analytics.js
 server: shiny
 ---
 

@@ -7,8 +7,8 @@ format:
     expandable: false
     include-in-header: 
         - file: www/google-analytics.html
-        - file: www/heap-analytics.js
-        - file: www/pendo-analytics.js
+        - file: www/heap-analytics.html
+        - file: www/pendo-analytics.html
 server: shiny
 ---
 

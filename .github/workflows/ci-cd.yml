@@ -31,6 +31,16 @@ jobs:
               wget https://quarto.org/download/latest/quarto-linux-amd64.deb
               sudo dpkg -i quarto-linux-amd64.deb
 
+         - name: Replace secrets placeholders
+           run: |
+               sed -i "s|__PENDO_API_KEY__|${PENDO_API_KEY}|g" www/pendo-analytics.html
+               sed -i "s|__HEAP_API_KEY__|${HEAP_API_KEY}|g" www/heap-analytics.html
+               sed -i "s|__GOOGLE_API_KEY__|${GOOGLE_API_KEY}|g" www/google-analytics.html
+           env:
+              PENDO_API_KEY: ${{ secrets.PENDO_API_KEY }}
+              HEAP_API_KEY: ${{ secrets.HEAP_API_KEY }}
+              GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+
          - name: Build the app
            run: |
               quarto render index.qmd

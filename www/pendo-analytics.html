@@ -1,5 +1,5 @@
 <script>
-    (function (apiKey) {
+    (async function (apiKey) {
         (function (p, e, n, d, o) {
             var v, w, x, y, z; o = p[d] = p[d] || {}; o._q = o._q || [];
             v = ['initialize', 'identify', 'updateOptions', 'pageLoad', 'track']; for (w = 0, x = v.length; w < x; ++w)(function (m) {
@@ -22,7 +22,7 @@
         // Please use Strings, Numbers, or Bools for value types.
         pendo.initialize({
             visitor: {
-                id: visitorId     // Required if user is logged in
+                id: visitorId    // Required if user is logged in
                 // email:        // Recommended if using Pendo Feedback, or NPS Email
                 // full_name:    // Recommended if using Pendo Feedback
                 // role:         // Optional
@@ -31,7 +31,7 @@
                 // as long as it's not one of the above reserved names.
             },
             account: {
-                id: null         // Highly recommended, required if using Pendo Feedback
+                // id:           // Highly recommended, required if using Pendo Feedback
                 // name:         // Optional
                 // is_paying:    // Recommended if using Pendo Feedback
                 // monthly_value:// Recommended if using Pendo Feedback

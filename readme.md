@@ -9,13 +9,14 @@ This is a dashboard for EECA's Energy End-Use Database, built with Quarto and Sh
 
 ## How to install and run the dashboard locally
 
-There are two things you will need to run the dashboard: Quarto and Python. This readme will assume the latter is already installed through Anaconda.
+There are two things you will need to run the dashboard: Quarto and Python.
 
-Install the Quarto CLI tool from the Quarto website: https://quarto.org/docs/download/. This dashboard requires only v1.4.x, the first Quarto release to include dashboard functionality. At the time of writing, v1.4.x is no longer in pre-release.
+Install the Quarto CLI tool from the Quarto website: https://quarto.org/docs/download/. Quarto dashboards were introduced in v1.4, but this dashboard should be developed with the latest Quarto release rather than pinning specifically to the 1.4.x line.
 
-At the time of writing, [shinyapps.io only supports python 3.7.13, 3.8.13, 3.9.13](https://docs.posit.co/shinyapps.io/getting-started.html#deploying-applications-1). If an application is deployed using another version of python, shinyapps.io will attempt to run it on the closest major/minor version of python. For this reason, a Python 3.9.x virtual environment is used in the development of this dashboard.
+At the time of writing, [shinyapps.io supports Python 3.7 through 3.12](https://docs.posit.co/shinyapps.io/guide/getting_started/). This dashboard's GitHub Actions deployments use Python 3.11.
 
--  **Create** a Python 3.9.x Anaconda environment `conda create -n eeud python=3.9` and **activate** it `conda activate eeud`.
+-  **Create** a Python 3.11 virtual environment `python3 -m venv .venv`.
+-  **Activate** it with `source .venv/bin/activate` on macOS/Linux, or `.venv\\Scripts\\activate` on Windows.
 -  **Navigate** your terminal into the project directory if you have not already done so.
 -  **Install** required Python libraries `python -m pip install -r requirements.txt`.
 -  **Install** quarto
@@ -30,9 +31,9 @@ sudo dpkg -i quarto-linux-amd64.deb
 
 Deployment to shinyapps.io is done primarily via Github actions.
 
-**Dev:** deployment occurs on any push to `main` branch. This will deploy to an existing desginated application within the shinyapps portal. Ensure that this version of the dashboard works well before deploying to production.
+**Dev:** deployment occurs on any push to `main` branch. This overwrites the fixed development app `eeud-dashboard-dev`.
 
-**Prod:** deployment occurs on any release tag that matches the pattern `v*.*.*`. This will create a new versioned application within the shinyapps portal.
+**Prod:** deployment occurs on any release tag that matches the pattern `v*.*.*`. This overwrites the fixed production app `eeud-dashboard`.
 
 ### CI-CD process.
 
@@ -40,7 +41,11 @@ For Github actions to deploy the dashboard correctly, ensure the following repos
 
 -  **DEV_APP_ID**. This can be found by opening the shinyapps portal and navigating to the appropriate application. An Id number will be assigned to it. If a development application does not already exist for this dashboard, see "Creating a new dev app" below.
 
+-  **PROD_APP_ID**. This should be the shinyapps.io application id for the fixed production app `eeud-dashboard`.
+
 -  **SHINYAPPS_NAME**, **SHINYAPPS_SECRET**, and **SHINYAPPS_TOKEN**. See the instructions on [this Posit docs page](https://docs.posit.co/shinyapps.io/getting-started.html#deploying-applications-1) to get the name, secret, and token information necessary for `rsconnect` to deploy.
+
+-  **PENDO_API_KEY** and **GOOGLE_API_KEY**. These are substituted into the analytics snippets during both development and production deployments before the dashboard is rendered.
 
 ### Deployment workflow
 
@@ -48,21 +53,21 @@ Without being across all of the details right now, it should describe the proces
 
 To deploy the dashboard to production, navigate to the repository's Releases page (this can be found on along the sidebar of the repository's main page). From the Releases page, we can *draft a new release*. *Choose a tag* for the release by typing a new tag that matches the pattern `v*.*.*`, adding an appropriate version number greater than the last. Click on *create new tag* to confirm the new release tag. Fill in the release title and description, ensure *Target* is set to *main*, and ensure *Set as the latest release* is checked. For pre-release versioning, check *Set as a pre-release*, and in the release tag use an appropriate affix such as `v*.*-beta.*` or `v*.*.*-alpha` to help distinguish it.
 
-Upon publishing the release, an *Action* will be called. These actions are described in .github/workflows/ci-cd.yml, and can be monitored from the *Actions* tab of the repository. Open the workflow run connected to the release tag, and you should see deploy-prod running. Click into this if you wish to monitor the action in progress. This will take a few minutes, and should eventually should show a green tick once it is complete. 
+Upon publishing the release, an *Action* will be called. These actions are described in .github/workflows/ci-cd.yml, and can be monitored from the *Actions* tab of the repository. Open the workflow run connected to the release tag, and you should see deploy-prod running. Click into this if you wish to monitor the action in progress. This will take a few minutes, and should eventually should show a green tick once it is complete.
 
-Navigate to EECA's shinyapps portal at shinyapps.io, and find the newly deployed application. The new application's name should contain the version number from the release tag we created. Open the application and ensure that it is working as intended. Once it is ready to go live, go into the application's *Settings*; in the *General* tab, set the *Instance Size* to `2X-Large (4 GB)`, and in the *Advanced* tab, set *Max Worker Processes* to `5` and *Max Connections* to `50`.
+Navigate to EECA's shinyapps portal at shinyapps.io, and find the fixed production application `eeud-dashboard`. Open the application and ensure that it is working as intended. Once it is ready to go live, go into the application's *Settings*; in the *General* tab, set the *Instance Size* to `2X-Large (4 GB)`, and in the *Advanced* tab, set *Max Worker Processes* to `5` and *Max Connections* to `50`.
 
-To publish on EECA's website, send the application's URL to MarComms, who will embed this into the appropriate page's iframe. Once you have confirmed this has been done, *Archive* the old application within the shinyapps portal.
+To publish on EECA's website, use the fixed production application's URL in the iframe. MarComms should not need a new shinyapps URL for each release.
 
-WIP: Custom URLs for applications on shinyapps is currently being investigated, so that MarComms won't have to manually update the iframe link each time a new release is made, instead making use of a static URL that can be applied to the latest application.
+This removes the need for version-specific production URLs because each release updates the same production app.
 
 ### Creating a new dev app
 
 The easiest way to create a development application is to build the dashboard locally up to the **render** stage as detailed above, and then deploy it manually. Rsconnect will need to be configured to connect to EECA's shinyapps portal, see the instructions on [this Posit docs page](https://docs.posit.co/shinyapps.io/getting-started.html#deploying-applications-1) to set up `rsconnect` locally.
 
--  **Deploy** the application `rsconnect deploy shiny -n "ACCOUNT NAME HERE" -t "APPLICATION NAME HERE" -N`. This will create a new application within the shinyapps portal, using the given application name. Suggested naming convention is to use a lower-case and hyphen-delimited application name, for example `tool-dashboard-quarto`.
+-  **Deploy** the application `rsconnect deploy shiny . -n "ACCOUNT NAME HERE" -t "APPLICATION NAME HERE" -N`. This will create a new application within the shinyapps portal, using the given application name. Suggested naming convention is to use a lower-case and hyphen-delimited application name, for example `eeud-dashboard-dev` for development or `eeud-dashboard` for production.
 
-Important note: Please suffix this application name with `_dev` to ensure it can be easily distinguished on shinyapps.io from production versions. It may also be necessary to delete the rsconnect-python folder if the dashboard has already been deployed with another application name, as it might cache deployment information that can override the deployment target. For the account name used for deployment, please see the SHINYAPPS_NAME secret above.
+Important note: It may be necessary to delete the rsconnect-python folder if the dashboard has already been deployed with another application name, as it might cache deployment information that can override the deployment target. For the account name used for deployment, please see the SHINYAPPS_NAME secret above.
 
 ### Potential deployment issues
 

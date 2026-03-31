@@ -17,10 +17,10 @@ jobs:
       steps:
          - uses: actions/checkout@v4
 
-         - name: Set up Python 3.9
+         - name: Set up Python 3.11
            uses: actions/setup-python@v5
            with:
-              python-version: "3.9.13" # Specific version required by shinyapps.io
+              python-version: "3.11"
 
          - name: Install dependencies
            run: |
@@ -63,6 +63,7 @@ jobs:
            run: |
               rsconnect deploy shiny . \
                 --name  "$SHINYAPPS_NAME" \
+                --title "eeud-dashboard-dev" \
                 --app-id "$DEV_APP_ID"
            env:
               SHINYAPPS_NAME: ${{ secrets.SHINYAPPS_NAME }}
@@ -77,10 +78,10 @@ jobs:
       steps:
          - uses: actions/checkout@v4
 
-         - name: Set up Python 3.9
+         - name: Set up Python 3.11
            uses: actions/setup-python@v5
            with:
-              python-version: "3.9.13" # Specific version required by shinyapps.io
+              python-version: "3.11"
 
          - name: Install dependencies
            run: |
@@ -115,16 +116,12 @@ jobs:
               SHINYAPPS_TOKEN: ${{ secrets.SHINYAPPS_TOKEN }}
               SHINYAPPS_SECRET: ${{ secrets.SHINYAPPS_SECRET }}
 
-         - name: Extract tag name
-           id: tag
-           run: echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-
          - name: Deploy to Production
            run: |
-              RELEASE_VERSION="${RELEASE_VERSION//./-}"
               rsconnect deploy shiny . \
                 --name "$SHINYAPPS_NAME" \
-                --title "eeud-dashboard-quarto_$RELEASE_VERSION"
+                --title "eeud-dashboard" \
+                --app-id "$PROD_APP_ID"
            env:
               SHINYAPPS_NAME: ${{ secrets.SHINYAPPS_NAME }}
-              RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
+              PROD_APP_ID: ${{ secrets.PROD_APP_ID }}

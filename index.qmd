@@ -32,7 +32,7 @@ from shiny import render, reactive, ui
 from shinywidgets import render_widget, render_plotly
 
 eeud = pd.read_csv('./data/EEUD-20032026.csv')#.set_index('Row')
-eeud['PeriodEndDate'] = pd.to_datetime(eeud['PeriodEndDate'])
+eeud['PeriodEndDate'] = pd.to_datetime(eeud['PeriodEndDate'], dayfirst=True)
 eeud['Period'] = eeud['PeriodEndDate'].dt.year
 eeud.rename(columns={
     'EnergyValue (Terajoules - TJ)': 'TJ',

@@ -40,7 +40,7 @@ $def-padding: 0.375rem !default;
 
 html,
 body {
-    height: var(--dashboard-height) !important;
+    min-height: var(--dashboard-height) !important;
 }
 
 body {
@@ -53,7 +53,6 @@ body {
     &.quarto-dashboard.dashboard-fill {
         display: flex;
         flex-direction: column;
-        height: var(--dashboard-height);
         min-height: var(--dashboard-height);
         overflow: hidden;
     }

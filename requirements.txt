@@ -1,13 +1,14 @@
 # Dash Packages: these are required for general quarto/shiny functionality, apply these to all dashboards.
 htmltools>=0.6,<0.7
 ipykernel>=6.29,<7
+rsconnect-python>=1.25,<2
+shiny>=1.4,<2
+shinywidgets>=0.7,<0.8
+
 jupyter-client>=8,<9
 nbclient>=0.10,<1
 nbformat>=5.10,<6
 PyYAML>=6,<7
-rsconnect-python>=1.25,<2
-shiny>=1.4,<2
-shinywidgets>=0.7,<0.8
 
 # Data Packages: these are required for dashboard-specific manipulation and visualisation of the datasets.
 numpy>=1.26,<3

@@ -8,6 +8,8 @@ format:
     include-in-header: 
         - file: www/google-analytics.html
         - file: www/pendo-analytics.html
+        - text: |
+            <script async src="https://cdn.jsdelivr.net/npm/@iframe-resizer/child@latest" type="text/javascript"></script>
 server: shiny
 ---
 
@@ -29,8 +31,12 @@ import plotly.graph_objects as go
 from shiny import render, reactive, ui
 from shinywidgets import render_widget, render_plotly
 
-eeud = pd.read_csv('./data/EEUD-12032025.csv').set_index('Row')
+eeud = pd.read_csv('./data/EEUD-20032026.csv')#.set_index('Row')
 eeud['PeriodEndDate'] = pd.to_datetime(eeud['PeriodEndDate'])
+eeud['Period'] = eeud['PeriodEndDate'].dt.year
+eeud.rename(columns={
+    'EnergyValue (Terajoules - TJ)': 'TJ',
+    }, inplace=True)
 
 eeud_colours = pd.read_csv('./data/eeud-colour-palette.csv', header=0, dtype=str).squeeze("columns").set_index(['Label', 'Dimension'])
 eeud_colours = eeud_colours[~eeud_colours.index.duplicated()]
@@ -72,7 +78,7 @@ def colormap(label, dimension, default="#9CA2B0"):
     try:
         color = eeud_colours.at[(label, dimension), 'Colour']
     except KeyError:
-        color = default
+         color = default
     return color
 
 def color_dict_for(dimension):
@@ -82,7 +88,27 @@ def color_dict_for(dimension):
     """
     fuel_group_colours = eeud_colours.xs(dimension, level='Dimension')
     fuel_group_dict = fuel_group_colours['Colour'].to_dict()
-    return fuel_group_dict
+    return fuel_group_dict 
+
+MIN_PLOT_HEIGHT = 720
+def apply_common_plotly_layout(fig, height=MIN_PLOT_HEIGHT):
+    #if height is not None:
+    #    fig.update_layout(
+    #        height=height
+    #    )
+    fig.update_layout(
+        font_family="Barlow",
+        modebar_remove=[
+            "zoom", "pan", "select", "lasso",
+            "zoomin", "zoomout", "autoscale"
+        ],
+        modebar_bgcolor="rgba(0,0,0,0)",
+        modebar_color="rgba(22,64,87,255)",
+        paper_bgcolor="rgba(232,236,238,255)",
+        plot_bgcolor="rgba(232,236,238,255)",
+        # margin=dict(l=20, r=20, t=40, b=20),
+    )
+    return fig
 
 def create_sankey_links_for_dict(df, *columns):
     """
@@ -233,16 +259,37 @@ def create_alluvial_links_for_dict(df, category_column, date_column, date_freq='
 
 # Overview
 
-## Row
+## Row {.flow}
 
-### Column
+### Column {width=40%}
 
 #### Row {.toolbar}
-<div style="flex-grow: 1; text-align: left;"><p style="font-size: 1rem; padding-top: 1rem; line-height: 0px;">Values presented for 2023</p></div>
-<div style="flex-grow: 0; text-align: right; padding-left: 0.375px;">
+
+<div style="flex-grow: 1; text-align: left;">
+
 ```{python}
-ui.input_select("highlight_category", "Showcase", choices=["End Use", "Fuel", "Sector", "Technology"], selected="Fuel")
+#| echo: false
+max_year = int(eeud["Period"].max())
+ui.tags.p(
+    f"Values presented for {max_year}",
+    style="font-size: 1rem; padding-top: 1rem; line-height: 0px;"
+)
 ```
+
+</div>
+
+<div style="flex-grow: 0; text-align: right; padding-left: 0.375px;">
+
+```{python}
+#| echo: false
+ui.input_select(
+    "highlight_category",
+    "Showcase",
+    choices=["End Use", "Fuel", "Sector", "Technology"],
+    selected="Fuel"
+)
+```
+
 </div>
 
 #### Row
@@ -263,44 +310,11 @@ def total_use():
     )
 ```
 
-#### Row {height=80%}
-
-```{python}
-#| title: Energy Usage Trend
-#| expandable: true
-@render_widget
-def display_trend():
-    category = title_case(input.highlight_category())
-    group = category + "Group"
-    eeud_subset = eeud[~pd.isna(eeud[category])].copy()
-    to_replace = ['Bus', 'Freight Rail', 'Heavy Truck', 'Light Commercial Vehicle', 'Light Passenger Vehicle', 'Medium Truck', 'Motorcycle', 'Passenger Rail', 'Plane', 'Ship', 'Very Heavy Truck']
-    eeud_subset['TechnologyGroup'] = eeud_subset['TechnologyGroup'].apply(lambda g: 'Transport' if g in to_replace else g)
-
-    grouped = eeud_subset.groupby([group, 'Period']).sum(numeric_only=True).reset_index()
-    total_tj_by_period = grouped.groupby('Period')['TJ'].sum().reset_index(name='TotalTJ')
-    merged = pd.merge(grouped, total_tj_by_period, on='Period')
-    merged['TJ_Proportion'] = (merged['TJ'] / merged['TotalTJ']) * 100
-    fig = px.area(merged,
-        y='TJ', x='Period', color=group, color_discrete_map=color_dict_for(group),
-        markers=True, hover_data={group: True, 'TJ_Proportion': True}).update_xaxes(dtick=1)
-    fig.update_traces(hovertemplate="%{customdata[0]} / %{x}<br>%{y:,.0f} TJ (%{customdata[1]:.1f}%)<extra></extra>")
-    fig.update_layout(yaxis=dict(title=f"Total Energy Usage (TJ)"))
-    fig.update_layout(legend=dict(
-        orientation="h",
-        yanchor="bottom", y=1.02,
-        xanchor="left", x=0))
-    fig.update_xaxes(dtick=1)
-    fig.update_layout(font_family="Barlow")
-    fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoscale'])
-    fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
-    fig.update_layout(paper_bgcolor='rgba(232,236,238,255)', plot_bgcolor='rgba(232,236,238,255)')
-    return fig
-
-```
-
 ### Column {width=60%}
 
 #### Row
+
+##### Column
 
 ```{python}
 @render.ui
@@ -324,6 +338,8 @@ def largest_use():
         showcase_layout="left center",
     )
 ```
+
+##### Column
 
 ```{python}
 @render.ui
@@ -349,6 +365,8 @@ def largest_increase():
     )
 ```
 
+##### Column
+
 ```{python}
 @render.ui
 def largest_decrease():
@@ -373,10 +391,45 @@ def largest_decrease():
     )
 ```
 
-#### Row {height=74%}
+## Row {.fill}
+
+### Column {width=40%}
+
+```{python}
+#| title: Energy Usage Trend
+#| expandable: false
+@render_widget
+def display_trend():
+    category = title_case(input.highlight_category())
+    group = category + "Group"
+    eeud_subset = eeud[~pd.isna(eeud[category])].copy()
+    to_replace = ['Bus', 'Freight Rail', 'Heavy Truck', 'Light Commercial Vehicle', 'Light Passenger Vehicle', 'Medium Truck', 'Motorcycle', 'Passenger Rail', 'Plane', 'Ship', 'Very Heavy Truck']
+    eeud_subset['TechnologyGroup'] = eeud_subset['TechnologyGroup'].apply(lambda g: 'Transport' if g in to_replace else g)
+
+    grouped = eeud_subset.groupby([group, 'Period']).sum(numeric_only=True).reset_index()
+    total_tj_by_period = grouped.groupby('Period')['TJ'].sum().reset_index(name='TotalTJ')
+    merged = pd.merge(grouped, total_tj_by_period, on='Period')
+    merged['TJ_Proportion'] = (merged['TJ'] / merged['TotalTJ']) * 100
+    fig = px.area(merged,
+        y='TJ', x='Period', color=group, color_discrete_map=color_dict_for(group),
+        markers=True, hover_data={group: True, 'TJ_Proportion': True}).update_xaxes(dtick=1)
+    fig.update_traces(hovertemplate="%{customdata[0]} / %{x}<br>%{y:,.0f} TJ (%{customdata[1]:.1f}%)<extra></extra>")
+    fig.update_layout(yaxis=dict(title=f"Total Energy Usage (TJ)"))
+    fig.update_layout(legend=dict(
+        orientation="h",
+        yanchor="bottom", y=1.02,
+        xanchor="left", x=0))
+    fig.update_xaxes(dtick=1)
+    fig = apply_common_plotly_layout(fig, height=None)
+    return fig
+
+```
+
+### Column {width=60%}
+
 ```{python}
 #| title: Energy Usage Map
-#| expandable: true
+#| expandable: false
 @render_widget
 def display_treemap():
     # Aggregate TJ energy usage by Group and Category.
@@ -442,11 +495,7 @@ def display_treemap():
     )])
 
     fig.update_traces(marker_colors=complete_df['colour'])
-    fig.update_layout(font_family="Barlow")
-    fig.update_layout(margin=dict(t=0, l=0, r=0, b=0))
-    fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
-    fig.update_layout(paper_bgcolor='rgba(232,236,238,255)', plot_bgcolor='rgba(232,236,238,255)')
-
+    fig = apply_common_plotly_layout(fig, height=None)
     return fig
 
 ```
@@ -610,10 +659,7 @@ def display_explore_chart():
                 hovertemplate="%{source.label} → %{target.label}<br>%{value:,.0f} TJ<extra></extra>"
                 )
         )])
-        fig.update_layout(font_family="Barlow")
-        fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoscale'])
-        fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
-        fig.update_layout(paper_bgcolor='rgba(232,236,238,255)', plot_bgcolor='rgba(232,236,238,255)')
+        fig = apply_common_plotly_layout(fig)
         return fig
 
     elif explore_chart_type.get() == 'Bar':
@@ -631,10 +677,7 @@ def display_explore_chart():
             xanchor="left", x=0))
         if right_node == 'Proxy':
             fig.update_layout(showlegend=False)
-        fig.update_layout(font_family="Barlow")
-        fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoscale'])
-        fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
-        fig.update_layout(paper_bgcolor='rgba(232,236,238,255)', plot_bgcolor='rgba(232,236,238,255)')
+        fig = apply_common_plotly_layout(fig)
         return fig
 
 ``` 
@@ -782,10 +825,7 @@ def display_timeseries_chart():
                 color = timeseries_links['color']
                 )
         )])
-        fig.update_layout(font_family="Barlow")
-        fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoscale'])
-        fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
-        fig.update_layout(paper_bgcolor='rgba(232,236,238,255)', plot_bgcolor='rgba(232,236,238,255)')
+        fig = apply_common_plotly_layout(fig)
         return fig
 
     elif timeseries_chart_type.get() == 'Line':
@@ -803,10 +843,7 @@ def display_timeseries_chart():
             fig.update_traces(hovertemplate="%{customdata[0]} / %{x}<br>%{y:,.0f} TJ<extra></extra>")
         else:
             fig.update_traces(hovertemplate="%{customdata[0]} / %{x}<br>%{y:.1f}%<extra></extra>")
-        fig.update_layout(font_family="Barlow")
-        fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoscale'])
-        fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
-        fig.update_layout(paper_bgcolor='rgba(232,236,238,255)', plot_bgcolor='rgba(232,236,238,255)')
+        fig = apply_common_plotly_layout(fig)
         return fig
 
     elif timeseries_chart_type.get() == 'Area':
@@ -824,10 +861,7 @@ def display_timeseries_chart():
             fig.update_traces(hovertemplate="%{customdata[0]} / %{x}<br>%{y:,.0f} TJ<extra></extra>")
         else:
             fig.update_traces(hovertemplate="%{customdata[0]} / %{x}<br>%{y:.1f}%<extra></extra>")
-        fig.update_layout(font_family="Barlow")
-        fig.update_layout(modebar_remove=['zoom', 'pan', 'select', 'lasso', 'zoomin', 'zoomout', 'autoscale'])
-        fig.update_layout(modebar_bgcolor='rgba(0,0,0,0)', modebar_color='rgba(22,64,87,255)')
-        fig.update_layout(paper_bgcolor='rgba(232,236,238,255)', plot_bgcolor='rgba(232,236,238,255)')
+        fig = apply_common_plotly_layout(fig)
         return fig
 
 ``` 
@@ -914,5 +948,5 @@ async def download_data_filtered_data():
 ```{python} 
 @render.data_frame
 def dataview():
-    return render.DataGrid(data_eeud_filtered().drop(['SectorANZSIC', 'PeriodEndDate', 'Transport'], axis=1), height="100%", width="100%", summary=False)
+    return render.DataGrid(data_eeud_filtered().drop(['SectorANZSIC', 'PeriodEndDate', 'Transport'], axis=1), height=MIN_PLOT_HEIGHT, width="100%", summary=False)
 ```

@@ -37,6 +37,9 @@ eeud['Period'] = eeud['PeriodEndDate'].dt.year
 eeud.rename(columns={
     'EnergyValue (Terajoules - TJ)': 'TJ',
     }, inplace=True)
+for column in eeud.columns:
+    if eeud[column].dtype == 'object':
+        eeud[column] = eeud[column].str.strip()
 
 eeud_colours = pd.read_csv('./data/eeud-colour-palette.csv', header=0, dtype=str).squeeze("columns").set_index(['Label', 'Dimension'])
 eeud_colours = eeud_colours[~eeud_colours.index.duplicated()]

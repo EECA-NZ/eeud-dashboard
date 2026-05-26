@@ -6,3 +6,5 @@ app.py
 index.html
 index.ipynb
 /.quarto/
+/.venv/
+**/*.quarto_ipynb

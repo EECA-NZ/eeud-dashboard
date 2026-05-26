@@ -53,6 +53,7 @@ Sector,Commercial,#164057
 Sector,Construction,#ea552c
 Sector,Dairy Cattle Farming,#515f5c
 Sector,Dairy Product Manufacturing,#eb5c34
+Sector,Data Centers,#667b8c
 Sector,Defence,#3a5a6f
 Sector,"Education and Training: Pre-School, Primary and Secondary",#436175
 Sector,Education and Training: Tertiary Education and Other Education,#4c677b
@@ -108,6 +109,7 @@ Technology,Conventional Hybrid Vehicle,#6d9393
 Technology,"Cooking Appliances, Residential Only (Cooktops/Microwaves/Ovens/Uprights)",#5fc3aa
 Technology,Cooking Elements,#63c5ad
 Technology,Cooking Ovens,#67c7b0
+Technology,Direct Heat,#49b89c
 Technology,Dishwashers,#6bc9b3
 Technology,Electric Furnace,#70cbb6
 Technology,Electric Motor,#ff8b83
@@ -147,6 +149,7 @@ TechnologyGroup,Heat/Cooling Devices,#41B496
 TechnologyGroup,Heavy Truck,#447474
 TechnologyGroup,Light Commercial Vehicle,#447474
 TechnologyGroup,Light Passenger Vehicle,#447474
+TechnologyGroup,Light Truck,#447474
 TechnologyGroup,Medium Truck,#447474
 TechnologyGroup,Mobile Motors,#E94E24
 TechnologyGroup,Motorcycle,#447474

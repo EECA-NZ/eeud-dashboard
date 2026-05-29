@@ -9,7 +9,11 @@ format:
         - file: www/google-analytics.html
         - file: www/pendo-analytics.html
         - text: |
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+        - text: |
             <script async src="https://cdn.jsdelivr.net/npm/@iframe-resizer/child@latest" type="text/javascript"></script>
+        - text: |
+            <script src="www/slider-label-bounds.js"></script>
 server: shiny
 ---
 
@@ -37,6 +41,9 @@ eeud['Period'] = eeud['PeriodEndDate'].dt.year
 eeud.rename(columns={
     'EnergyValue (Terajoules - TJ)': 'TJ',
     }, inplace=True)
+for column in eeud.columns:
+    if eeud[column].dtype == 'object':
+        eeud[column] = eeud[column].str.strip()
 
 eeud_colours = pd.read_csv('./data/eeud-colour-palette.csv', header=0, dtype=str).squeeze("columns").set_index(['Label', 'Dimension'])
 eeud_colours = eeud_colours[~eeud_colours.index.duplicated()]
@@ -65,6 +72,17 @@ sector_groups = {group: set(sub_df['Sector'].dropna()) for group, sub_df in eeud
 def title_case(s):
     return re.sub(r"(_|-)+", " ", s).title().replace(" ", "")
 
+def download_button_label(text):
+    icon = ui.tags.i(class_="fa-solid fa-download download-button-icon", **{"aria-hidden": "true"})
+    return ui.span(icon, text, class_="download-button-label")
+
+def chart_type_button_label(icon_class, text):
+    return ui.span(
+        ui.tags.i(class_=f"fa-solid {icon_class} chart-type-button-icon", **{"aria-hidden": "true"}),
+        ui.span(text, class_="chart-type-button-text"),
+        class_="chart-type-button-label"
+    )
+
 def hex_to_rgba(hex, alpha=1):
     hex = hex.replace('#','')
     return f"rgba{tuple([int(hex[i:i+2], 16) for i in (0, 2, 4)] + [alpha])}"
@@ -91,22 +109,155 @@ def color_dict_for(dimension):
     return fuel_group_dict 
 
 MIN_PLOT_HEIGHT = 720
+PLOTLY_FONT_FAMILY = "Barlow"
+PLOTLY_FONT_SIZE = 13
+PLOTLY_AXIS_TITLE_SIZE = 13
+PLOTLY_LEGEND_TITLE_SIZE = 13
+PLOTLY_FONT_COLOR_LIGHT = "#000000"
+PLOTLY_FONT_COLOR_DARK = "#FFFFFF"
+
+def rgb_channel_to_linear(channel):
+    channel = channel / 255
+    if channel <= 0.04045:
+        return channel / 12.92
+    return ((channel + 0.055) / 1.055) ** 2.4
+
+def relative_luminance(red, green, blue):
+    return (
+        0.2126 * rgb_channel_to_linear(red)
+        + 0.7152 * rgb_channel_to_linear(green)
+        + 0.0722 * rgb_channel_to_linear(blue)
+    )
+
+def plotly_font_color_for(background_color):
+    if not background_color:
+        return PLOTLY_FONT_COLOR_LIGHT
+
+    background_color = str(background_color).strip()
+
+    hex_match = re.fullmatch(r"#([0-9a-fA-F]{6})", background_color)
+    if hex_match:
+        hex_value = hex_match.group(1)
+        red = int(hex_value[0:2], 16)
+        green = int(hex_value[2:4], 16)
+        blue = int(hex_value[4:6], 16)
+        return (
+            PLOTLY_FONT_COLOR_DARK
+            if relative_luminance(red, green, blue) < 0.45
+            else PLOTLY_FONT_COLOR_LIGHT
+        )
+
+    rgb_match = re.fullmatch(
+        r"rgba?\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})(?:\s*,\s*(?:[01](?:\.\d+)?)\s*)?\)",
+        background_color
+    )
+    if rgb_match:
+        red, green, blue = (int(value) for value in rgb_match.groups())
+        return (
+            PLOTLY_FONT_COLOR_DARK
+            if relative_luminance(red, green, blue) < 0.45
+            else PLOTLY_FONT_COLOR_LIGHT
+        )
+
+    return PLOTLY_FONT_COLOR_LIGHT
+
+def apply_cartesian_axis_padding(
+    fig,
+    margin=None,
+    x_tick_standoff=8,
+    y_tick_standoff=8,
+    x_title_standoff=10,
+    y_title_standoff=10
+):
+    margin = margin or dict(l=24, r=24, t=40, b=24)
+
+    fig.update_layout(margin=margin)
+
+    x_axis_updates = dict(
+        automargin=True,
+        title_standoff=x_title_standoff
+    )
+    y_axis_updates = dict(
+        automargin=True,
+        title_standoff=y_title_standoff
+    )
+
+    try:
+        fig.update_xaxes(
+            ticklabelstandoff=x_tick_standoff,
+            **x_axis_updates
+        )
+        fig.update_yaxes(
+            ticklabelstandoff=y_tick_standoff,
+            **y_axis_updates
+        )
+    except ValueError:
+        # Older Plotly releases may not support ticklabelstandoff.
+        fig.update_xaxes(**x_axis_updates)
+        fig.update_yaxes(**y_axis_updates)
+
+    return fig
+
 def apply_common_plotly_layout(fig, height=MIN_PLOT_HEIGHT):
+    paper_bgcolor = fig.layout.paper_bgcolor or "rgba(255,255,255,255)"
+    plot_bgcolor = fig.layout.plot_bgcolor or paper_bgcolor
+    font_color = plotly_font_color_for(plot_bgcolor or paper_bgcolor)
+
     #if height is not None:
     #    fig.update_layout(
     #        height=height
     #    )
     fig.update_layout(
-        font_family="Barlow",
+        font=dict(
+            family=PLOTLY_FONT_FAMILY,
+            size=PLOTLY_FONT_SIZE,
+            color=font_color
+        ),
+        hoverlabel=dict(
+            font=dict(
+                family=PLOTLY_FONT_FAMILY,
+                size=PLOTLY_FONT_SIZE,
+                color=font_color
+            )
+        ),
+        legend=dict(
+            font=dict(size=PLOTLY_FONT_SIZE, color=font_color),
+            title=dict(font=dict(size=PLOTLY_LEGEND_TITLE_SIZE, color=font_color))
+        ),
         modebar_remove=[
             "zoom", "pan", "select", "lasso",
             "zoomin", "zoomout", "autoscale"
         ],
         modebar_bgcolor="rgba(0,0,0,0)",
-        modebar_color="rgba(22,64,87,255)",
-        paper_bgcolor="rgba(232,236,238,255)",
-        plot_bgcolor="rgba(232,236,238,255)",
+        modebar_color="rgba(0,0,0,255)",
+        paper_bgcolor=paper_bgcolor,
+        plot_bgcolor=plot_bgcolor,
         # margin=dict(l=20, r=20, t=40, b=20),
+    )
+    fig.update_xaxes(
+        tickfont=dict(size=PLOTLY_FONT_SIZE, color=font_color),
+        title_font=dict(size=PLOTLY_AXIS_TITLE_SIZE, color=font_color)
+    )
+    fig.update_yaxes(
+        tickfont=dict(size=PLOTLY_FONT_SIZE, color=font_color),
+        title_font=dict(size=PLOTLY_AXIS_TITLE_SIZE, color=font_color)
+    )
+    fig.update_annotations(font=dict(size=PLOTLY_FONT_SIZE, color=font_color))
+    fig.update_traces(
+        textfont=dict(
+            family=PLOTLY_FONT_FAMILY,
+            size=PLOTLY_FONT_SIZE,
+            color=font_color
+        ),
+        selector=dict(type="sankey")
+    )
+    fig.update_traces(
+        textfont=dict(
+            family=PLOTLY_FONT_FAMILY,
+            size=PLOTLY_FONT_SIZE,
+            color=font_color
+        ),
+        selector=dict(type="treemap")
     )
     return fig
 
@@ -263,6 +414,21 @@ def create_alluvial_links_for_dict(df, category_column, date_column, date_freq='
 
 ### Column {width=40%}
 
+#### Row
+
+```{python}
+@render.ui
+def total_use():
+    return ui.value_box(
+        None,
+        f"{round(eeud[eeud.Period==max(eeud.Period)]['TJ'].sum()/1000)*1000:,} TJ",
+        ui.tags.p(f"Total Energy Use {max(eeud.Period)}", class_="value-box-caption"),
+        showcase=ui.tags.i(class_="fa-solid fa-bolt", **{"aria-hidden": "true"}),
+        theme="secondary",
+        showcase_layout="left center",
+    )
+```
+
 #### Row {.toolbar}
 
 <div style="flex-grow: 1; text-align: left;">
@@ -278,37 +444,21 @@ ui.tags.p(
 
 </div>
 
-<div style="flex-grow: 0; text-align: right; padding-left: 0.375px;">
+<div class="overview-showcase-control" style="flex-grow: 0; margin-left: auto; text-align: left; padding-left: 0.375px;">
 
 ```{python}
 #| echo: false
-ui.input_select(
+ui.input_selectize(
     "highlight_category",
     "Showcase",
     choices=["End Use", "Fuel", "Sector", "Technology"],
-    selected="Fuel"
+    selected="Fuel",
+    multiple=False
 )
 ```
 
 </div>
 
-#### Row
-
-```{python}
-@render.ui
-def total_use():
-    return ui.value_box(
-        f"Total Energy Use {max(eeud.Period)} (TJ)",
-        f"{round(eeud[eeud.Period==max(eeud.Period)]['TJ'].sum()/1000)*1000:,}",
-        showcase=ui.HTML('''
-            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-lightning-charge" viewBox="0 0 16 16">
-                <path d="M11.251.068a.5.5 0 0 1 .227.58L9.677 6.5H13a.5.5 0 0 1 .364.843l-8 8.5a.5.5 0 0 1-.842-.49L6.323 9.5H3a.5.5 0 0 1-.364-.843l8-8.5a.5.5 0 0 1 .615-.09zM4.157 8.5H7a.5.5 0 0 1 .478.647L6.11 13.59l5.732-6.09H9a.5.5 0 0 1-.478-.647L9.89 2.41z"/>
-            </svg>
-        '''),
-        theme="secondary",
-        showcase_layout="left center",
-    )
-```
 
 ### Column {width=60%}
 
@@ -328,12 +478,8 @@ def largest_use():
     return ui.value_box(
         max_use if len(max_use) <=32 else max_use[:32]+"...",
         f"{round(summed_data['TJ'].max()/10)*10:,} TJ",
-        f"Largest {category}",
-        showcase=ui.HTML('''
-            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-bar-chart-line" viewBox="0 0 16 16">
-                <path d="M11 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12h.5a.5.5 0 0 1 0 1H.5a.5.5 0 0 1 0-1H1v-3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3h1V7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7h1zm1 12h2V2h-2zm-3 0V7H7v7zm-5 0v-3H2v3z"/>
-            </svg>
-        '''),
+        ui.tags.p(f"Largest {category}", class_="value-box-caption"),
+        showcase=ui.tags.i(class_="fa-solid fa-ranking-star", **{"aria-hidden": "true"}),
         theme="secondary",
         showcase_layout="left center",
     )
@@ -354,12 +500,8 @@ def largest_increase():
     return ui.value_box(
         max_growth,
         f"{round(summed_data['growth'].max()/10)*10:,} TJ",
-        "Largest Increase YoY",
-        showcase=ui.HTML('''
-            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-graph-up-arrow" viewBox="0 0 16 16">
-                <path fill-rule="evenodd" d="M0 0h1v15h15v1H0zm10 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0V4.9l-3.613 4.417a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61L13.445 4H10.5a.5.5 0 0 1-.5-.5"/>
-            </svg>
-        '''),
+        ui.tags.p("Largest Increase YoY", class_="value-box-caption"),
+        showcase=ui.tags.i(class_="fa-solid fa-angles-up", **{"aria-hidden": "true"}),
         theme="secondary",
         showcase_layout="left center",
     )
@@ -380,12 +522,8 @@ def largest_decrease():
     return ui.value_box(
         min_growth,
         f"{round(summed_data['growth'].min()/10)*10:,} TJ",
-        "Largest Decrease YoY",
-        showcase=ui.HTML('''
-            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-graph-down-arrow" viewBox="0 0 16 16">
-                <path fill-rule="evenodd" d="M0 0h1v15h15v1H0zm10 11.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 0-1 0v2.6l-3.613-4.417a.5.5 0 0 0-.74-.037L7.06 8.233 3.404 3.206a.5.5 0 0 0-.808.588l4 5.5a.5.5 0 0 0 .758.06l2.609-2.61L13.445 11H10.5a.5.5 0 0 0-.5.5"/>
-            </svg>
-        '''),
+        ui.tags.p("Largest Decrease YoY", class_="value-box-caption"),
+        showcase=ui.tags.i(class_="fa-solid fa-angles-down", **{"aria-hidden": "true"}),
         theme="secondary",
         showcase_layout="left center",
     )
@@ -421,6 +559,13 @@ def display_trend():
         xanchor="left", x=0))
     fig.update_xaxes(dtick=1)
     fig = apply_common_plotly_layout(fig, height=None)
+    fig = apply_cartesian_axis_padding(
+        fig,
+        margin=dict(l=28, r=20, t=48, b=32),
+        x_tick_standoff=10,
+        y_tick_standoff=10,
+        y_title_standoff=14
+    )
     return fig
 
 ```
@@ -509,8 +654,18 @@ def display_treemap():
 <h5>Display</h5>
 
 ```{python}
-ui.input_select("explore_left_node", "From", choices=["End Use", "End Use Group", "Fuel", "Fuel Group", "Sector", "Sector Group", "Technology", "Technology Group"], selected="Fuel")
-ui.input_select("explore_right_node", "To", choices=["End Use", "End Use Group", "Fuel", "Fuel Group", "Sector", "Sector Group", "Technology", "Technology Group"], selected="End Use Group")
+ui.input_selectize(
+    "explore_left_node", "From",
+    choices=["End Use", "End Use Group", "Fuel", "Fuel Group", "Sector", "Sector Group", "Technology", "Technology Group"],
+    selected="Fuel",
+    multiple=False
+)
+ui.input_selectize(
+    "explore_right_node", "To",
+    choices=["End Use", "End Use Group", "Fuel", "Fuel Group", "Sector", "Sector Group", "Technology", "Technology Group"],
+    selected="End Use Group",
+    multiple=False
+)
 ```
 
 <br/>
@@ -579,7 +734,7 @@ def explore_eeud_filtered():
 
 ```{python}
 @render.download(
-    label="Download CSV",
+    label=download_button_label("Download CSV"),
     filename=lambda: f"explore-{date.today().isoformat()}-{np.random.randint(100, 999)}.csv"
 )
 async def download_explore_filtered_data():
@@ -598,7 +753,11 @@ async def download_explore_filtered_data():
 @render.ui
 def render_bar_button():
     btn_class = 'btn-primary' if explore_chart_type.get() == 'Bar' else 'btn-secondary'
-    return ui.input_action_button("explore_bar", "Bar Chart", class_=btn_class)
+    return ui.input_action_button(
+        "explore_bar",
+        chart_type_button_label("fa-chart-column", "Bar"),
+        class_=btn_class
+    )
 @reactive.effect
 def set_explore_bar_chart():
     input.explore_bar()
@@ -610,7 +769,11 @@ def set_explore_bar_chart():
 @render.ui
 def render_sankey_button():
     btn_class = 'btn-primary' if explore_chart_type.get() == 'Sankey' else 'btn-secondary'
-    return ui.input_action_button("explore_sankey", "Sankey Chart", class_=btn_class)
+    return ui.input_action_button(
+        "explore_sankey",
+        chart_type_button_label("fa-chart-gantt", "Sankey"),
+        class_=btn_class
+    )
 @reactive.effect
 def set_explore_sankey_chart():
     input.explore_sankey()
@@ -678,6 +841,12 @@ def display_explore_chart():
         if right_node == 'Proxy':
             fig.update_layout(showlegend=False)
         fig = apply_common_plotly_layout(fig)
+        fig = apply_cartesian_axis_padding(
+            fig,
+            margin=dict(l=36, r=20, t=48, b=28),
+            x_tick_standoff=10,
+            y_tick_standoff=12
+        )
         return fig
 
 ``` 
@@ -691,8 +860,18 @@ def display_explore_chart():
 <h5>Display</h5>
 
 ```{python}
-ui.input_select("timeseries_category", "Category", choices=["End Use", "End Use Group", "Fuel", "Fuel Group", "Sector", "Sector Group", "Technology", "Technology Group"], selected="Fuel")
-ui.input_select("timeseries_display", "Values", choices=["Total", "Proportional"], selected="Total")
+ui.input_selectize(
+    "timeseries_category", "Category",
+    choices=["End Use", "End Use Group", "Fuel", "Fuel Group", "Sector", "Sector Group", "Technology", "Technology Group"],
+    selected="Fuel",
+    multiple=False
+)
+ui.input_selectize(
+    "timeseries_display", "Values",
+    choices=["Total", "Proportional"],
+    selected="Total",
+    multiple=False
+)
 ```
 
 <br/>
@@ -752,7 +931,7 @@ def timeseries_eeud_filtered():
 
 ```{python}
 @render.download(
-    label="Download CSV",
+    label=download_button_label("Download CSV"),
     filename=lambda: f"timeseries-{date.today().isoformat()}-{np.random.randint(100, 999)}.csv"
 )
 async def download_timeseries_filtered_data():
@@ -771,12 +950,20 @@ async def download_timeseries_filtered_data():
 @render.ui
 def render_timeseries_area_button():
     btn_class = 'btn-primary' if timeseries_chart_type.get() == 'Area' else 'btn-secondary'
-    return ui.input_action_button("timeseries_area", "Area Chart", class_=btn_class)
+    return ui.input_action_button(
+        "timeseries_area",
+        chart_type_button_label("fa-chart-area", "Area"),
+        class_=btn_class
+    )
 
 @render.ui
 def render_timeseries_line_button():
     btn_class = 'btn-primary' if timeseries_chart_type.get() == 'Line' else 'btn-secondary'
-    return ui.input_action_button("timeseries_line", "Line Chart", class_=btn_class)
+    return ui.input_action_button(
+        "timeseries_line",
+        chart_type_button_label("fa-chart-line", "Line"),
+        class_=btn_class
+    )
 
 @reactive.effect
 def set_timeseries_area_chart():
@@ -844,6 +1031,13 @@ def display_timeseries_chart():
         else:
             fig.update_traces(hovertemplate="%{customdata[0]} / %{x}<br>%{y:.1f}%<extra></extra>")
         fig = apply_common_plotly_layout(fig)
+        fig = apply_cartesian_axis_padding(
+            fig,
+            margin=dict(l=28, r=20, t=48, b=32),
+            x_tick_standoff=10,
+            y_tick_standoff=10,
+            y_title_standoff=14
+        )
         return fig
 
     elif timeseries_chart_type.get() == 'Area':
@@ -925,6 +1119,8 @@ def data_eeud_filtered():
 
     data = data[data['Period'].between(input.data_period()[0], input.data_period()[1], inclusive='both')]
 
+    data = data[['EndUse', 'EndUseGroup', 'Fuel', 'FuelGroup', 'Sector', 'SectorANZSIC', 'SectorGroup', 'Technology', 'TechnologyGroup', 'Transport', 'TJ', 'Period', 'PeriodEndDate']]
+
     return data
 ```
 
@@ -933,7 +1129,7 @@ def data_eeud_filtered():
 
 ```{python}
 @render.download(
-    label="Download CSV",
+    label=download_button_label("Download CSV"),
     filename=lambda: f"data-{date.today().isoformat()}-{np.random.randint(100, 999)}.csv"
 )
 async def download_data_filtered_data():
@@ -948,5 +1144,20 @@ async def download_data_filtered_data():
 ```{python} 
 @render.data_frame
 def dataview():
-    return render.DataGrid(data_eeud_filtered().drop(['SectorANZSIC', 'PeriodEndDate', 'Transport'], axis=1), height=MIN_PLOT_HEIGHT, width="100%", summary=False)
+    data = data_eeud_filtered()
+    data = data.drop(['SectorANZSIC', 'PeriodEndDate', 'Transport'], axis=1)
+    data['TJ'] = data['TJ'].round(2)
+    data = data.rename(columns={
+        'EndUse': 'End Use',
+        'EndUseGroup': 'End Use Group',
+        'Fuel': 'Fuel',
+        'FuelGroup': 'Fuel Group',
+        'Sector': 'Sector',
+        'SectorGroup': 'Sector Group',
+        'Technology': 'Technology',
+        'TechnologyGroup': 'Technology Group',
+        'TJ': 'Energy Usage (TJ)',
+        'Period': 'Year',
+    })
+    return render.DataGrid(data, width="100%", summary=False)
 ```

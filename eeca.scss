@@ -214,28 +214,53 @@ label {
     font-size: 20px !important;
     font-weight: $medium !important;
 
+    .nav-link {
+        display: inline-flex !important;
+        padding: 0rem default 0rem !important;
+        position: relative !important;
+        text-decoration: none !important;
+        transition: color 0s !important;
+
+        &::after {
+            background-color: transparent !important;
+            bottom: 1rem !important;
+            content: "" !important;
+            height: 1px !important;
+            left: 0.75rem !important;
+            position: absolute !important;
+            right: 0.75rem !important;
+            transition: background-color 0s !important;
+        }
+    }
+
     .nav-link:not(.active):hover,
     .nav-link:not(.active):focus,
     .nav-link:not(.active):focus-visible {
-        //box-shadow: 0 -2px inset $primary !important;
-        //text-decoration: underline;
-        //background-color: $secondary !important;
-        //border-radius: $def-padding;
         color: $sea-blue !important;
-        text-decoration: underline !important;
-        text-underline-offset: $def-padding !important;
+        text-decoration: none !important;
+
+        &::after {
+            background-color: $sea-blue !important;
+        }
     }
 
     .active {
         background-color: $silver !important;
         color: $black !important;
-        //border-radius: $def-padding;
-        //color: $black !important;
-        text-decoration: underline !important;
-        text-underline-offset: $def-padding !important;
+        text-decoration: none !important;
+
+        &::after {
+            background-color: $black !important;
+        }
 
         &:hover {
+            color: $black !important;
             cursor: default !important;
+            text-decoration: none !important;
+
+            &::after {
+                background-color: $black !important;
+            }
         }
     }
 }

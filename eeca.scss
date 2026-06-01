@@ -646,10 +646,7 @@ $slider-selected-color: $sky-blue;
     border: 0 !important;
     box-shadow: none !important;
     color: $black !important;
-    padding-bottom: 1px !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    padding-top: $def-padding !important;
+    padding: $def-padding 1px 1px !important;
     transition: box-shadow 0s, color 0s !important;
 
     &:hover,
@@ -934,14 +931,14 @@ h5 {
     paint-order: stroke fill !important;
     stroke: none !important;
     text-shadow:
-        -1px -1px 0 $white,
-         0 -1px 0 $white,
-         1px -1px 0 $white,
-        -1px  0 0 $white,
-         1px  0 0 $white,
-        -1px  1px 0 $white,
-         0  1px 0 $white,
-         1px  1px 0 $white !important;
+        -1px -1px 0 $silver,
+         0 -1px 0 $silver,
+         1px -1px 0 $silver,
+        -1px  0 0 $silver,
+         1px  0 0 $silver,
+        -1px  1px 0 $silver,
+         0  1px 0 $silver,
+         1px  1px 0 $silver !important;
 }
 
 .js-plotly-plot .plotly .modebar-btn[data-title="Produced with Plotly.js"],
@@ -968,4 +965,13 @@ h5 {
 .js-plotly-plot .plotly .modebar-btn.active svg rect,
 .js-plotly-plot .plotly .modebar-btn.active svg polygon {
     fill: $sea-blue !important;
+}
+
+.js-plotly-plot .plotly .modebar-btn::after {
+    background: $black !important;
+    color: $white !important;
+    font-family: $font-family-sans-serif !important;
+    font-size: 13px !important;
+    font-stretch: condensed !important;
+    font-weight: $regular !important;
 }

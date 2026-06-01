@@ -20,9 +20,7 @@ server: shiny
 ```{python}
 # Built-in modules
 import asyncio
-from datetime import date
 import math
-import random
 import re
 
 # Additional modules, ensure these are added to the requirements file
@@ -30,6 +28,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.graph_objects import FigureWidget
 
 # Dashboard modules
 from shiny import render, reactive, ui
@@ -116,6 +115,166 @@ PLOTLY_LEGEND_TITLE_SIZE = 13
 PLOTLY_FONT_COLOR_LIGHT = "#000000"
 PLOTLY_FONT_COLOR_DARK = "#FFFFFF"
 
+def slugify_download_title(title):
+    return re.sub(r"[^a-z0-9]+", "-", str(title).strip().lower()).strip("-")
+
+def set_plotly_download_filename(fig, title):
+    filename = slugify_download_title(title) or "eeud-chart"
+    widget = fig if isinstance(fig, FigureWidget) else FigureWidget(fig)
+    widget._config = {
+        **widget._config,
+        "toImageButtonOptions": {
+            **widget._config.get("toImageButtonOptions", {}),
+            "filename": filename,
+        },
+    }
+    return widget
+
+def csv_download_filename(title):
+    return f"{slugify_download_title(title) or 'eeud-data'}.csv"
+
+DOWNLOAD_FILTER_COLUMNS = {
+    "EndUse": "End Use",
+    "Fuel": "Fuel",
+    "Sector": "Sector",
+    "Technology": "Technology",
+}
+
+def active_download_filter_columns(view, excluded_columns=None):
+    excluded_columns = set(excluded_columns or [])
+
+    if view == "explore":
+        filter_state = {
+            "EndUse": input.explore_end_use(),
+            "Fuel": input.explore_fuels(),
+            "Sector": input.explore_sectors(),
+            "Technology": input.explore_technologies(),
+        }
+    elif view == "timeseries":
+        filter_state = {
+            "EndUse": input.timeseries_end_use(),
+            "Fuel": input.timeseries_fuels(),
+            "Sector": input.timeseries_sectors(),
+            "Technology": input.timeseries_technologies(),
+        }
+    else:
+        filter_state = {}
+
+    return [
+        column
+        for column, values in filter_state.items()
+        if len(values) > 0 and column not in excluded_columns
+    ]
+
+def rename_download_columns(df, label_map):
+    renamed = {
+        column: label_map.get(column, column)
+        for column in df.columns
+    }
+    return df.rename(columns=renamed)
+
+def build_explore_download_data():
+    left_node = title_case(input.explore_left_node())
+    right_node = title_case(input.explore_right_node())
+    data = explore_eeud_filtered().copy()
+
+    if left_node == right_node:
+        data["Proxy"] = "Total Energy Use"
+        right_node = "Proxy"
+
+    extra_index_columns = active_download_filter_columns(
+        "explore",
+        excluded_columns={left_node, right_node, "Proxy"}
+    )
+    index_columns = [left_node, *extra_index_columns]
+
+    grouped = (
+        data.groupby(index_columns + [right_node], dropna=False)["TJ"]
+        .sum()
+        .reset_index()
+    )
+
+    wide = (
+        grouped.pivot_table(
+            index=index_columns,
+            columns=right_node,
+            values="TJ",
+            aggfunc="sum",
+            fill_value=0,
+        )
+        .reset_index()
+    )
+
+    if hasattr(wide.columns, "name"):
+        wide.columns.name = None
+
+    return rename_download_columns(
+        wide,
+        {
+            left_node: input.explore_left_node(),
+            **{column: DOWNLOAD_FILTER_COLUMNS[column] for column in extra_index_columns},
+        }
+    )
+
+def build_timeseries_download_data():
+    category = title_case(input.timeseries_category())
+    data = timeseries_eeud_filtered().copy()
+    extra_index_columns = active_download_filter_columns(
+        "timeseries",
+        excluded_columns={category}
+    )
+    index_columns = [category, *extra_index_columns]
+
+    grouped = (
+        data.groupby(index_columns + ["Period"], dropna=False)["TJ"]
+        .sum()
+        .reset_index()
+    )
+
+    if input.timeseries_display() == "Proportional":
+        totals = grouped.groupby("Period")["TJ"].transform("sum")
+        grouped["TJ"] = np.where(totals > 0, grouped["TJ"] / totals * 100, 0)
+
+    wide = (
+        grouped.pivot_table(
+            index=index_columns,
+            columns="Period",
+            values="TJ",
+            aggfunc="sum",
+            fill_value=0,
+        )
+        .reset_index()
+    )
+
+    if hasattr(wide.columns, "name"):
+        wide.columns.name = None
+
+    return rename_download_columns(
+        wide,
+        {
+            category: input.timeseries_category(),
+            **{column: DOWNLOAD_FILTER_COLUMNS[column] for column in extra_index_columns},
+        }
+    )
+
+def build_data_grid_download_data():
+    data = data_eeud_filtered().copy()
+    data = data.drop(['SectorANZSIC', 'PeriodEndDate', 'Transport'], axis=1)
+    data['TJ'] = data['TJ'].round(2)
+    data = data.rename(columns={
+        'EndUse': 'End Use',
+        'EndUseGroup': 'End Use Group',
+        'Fuel': 'Fuel',
+        'FuelGroup': 'Fuel Group',
+        'Sector': 'Sector',
+        'SectorGroup': 'Sector Group',
+        'Technology': 'Technology',
+        'TechnologyGroup': 'Technology Group',
+        'TJ': 'Energy Usage (TJ)',
+        'Period': 'Year',
+    })
+    return data
+
 def rgb_channel_to_linear(channel):
     channel = channel / 255
     if channel <= 0.04045:
@@ -160,6 +319,77 @@ def plotly_font_color_for(background_color):
         )
 
     return PLOTLY_FONT_COLOR_LIGHT
+
+def hover_font_colors_for(color_values):
+    if color_values is None:
+        return None
+
+    if isinstance(color_values, pd.Series):
+        color_values = color_values.tolist()
+    elif isinstance(color_values, np.ndarray):
+        color_values = color_values.tolist()
+
+    if isinstance(color_values, (list, tuple)):
+        return [plotly_font_color_for(value) for value in color_values]
+
+    return plotly_font_color_for(color_values)
+
+def trace_hover_color_source(trace):
+    if trace.type == "treemap":
+        return getattr(getattr(trace, "marker", None), "colors", None)
+
+    marker = getattr(trace, "marker", None)
+    if marker is not None and getattr(marker, "color", None) is not None:
+        return marker.color
+
+    line = getattr(trace, "line", None)
+    if line is not None and getattr(line, "color", None) is not None:
+        return line.color
+
+    if getattr(trace, "fillcolor", None) is not None:
+        return trace.fillcolor
+
+    return None
+
+def apply_hoverlabel_font_colors(fig):
+    for trace in fig.data:
+        if trace.type == "sankey":
+            node_colors = hover_font_colors_for(getattr(trace.node, "color", None))
+            link_colors = hover_font_colors_for(getattr(trace.link, "color", None))
+
+            if node_colors is not None:
+                trace.node.hoverlabel = dict(
+                    font=dict(
+                        family=PLOTLY_FONT_FAMILY,
+                        size=PLOTLY_FONT_SIZE,
+                        color=node_colors
+                    )
+                )
+
+            if link_colors is not None:
+                trace.link.hoverlabel = dict(
+                    font=dict(
+                        family=PLOTLY_FONT_FAMILY,
+                        size=PLOTLY_FONT_SIZE,
+                        color=link_colors
+                    )
+                )
+
+            continue
+
+        hover_colors = hover_font_colors_for(trace_hover_color_source(trace))
+        if hover_colors is None:
+            continue
+
+        trace.hoverlabel = dict(
+            font=dict(
+                family=PLOTLY_FONT_FAMILY,
+                size=PLOTLY_FONT_SIZE,
+                color=hover_colors
+            )
+        )
+
+    return fig
 
 def apply_cartesian_axis_padding(
     fig,
@@ -210,14 +440,12 @@ def apply_common_plotly_layout(fig, height=MIN_PLOT_HEIGHT):
     fig.update_layout(
         font=dict(
             family=PLOTLY_FONT_FAMILY,
-            size=PLOTLY_FONT_SIZE,
-            color=font_color
+            size=PLOTLY_FONT_SIZE
         ),
         hoverlabel=dict(
             font=dict(
                 family=PLOTLY_FONT_FAMILY,
-                size=PLOTLY_FONT_SIZE,
-                color=font_color
+                size=PLOTLY_FONT_SIZE
             )
         ),
         legend=dict(
@@ -254,11 +482,11 @@ def apply_common_plotly_layout(fig, height=MIN_PLOT_HEIGHT):
     fig.update_traces(
         textfont=dict(
             family=PLOTLY_FONT_FAMILY,
-            size=PLOTLY_FONT_SIZE,
-            color=font_color
+            size=PLOTLY_FONT_SIZE
         ),
         selector=dict(type="treemap")
     )
+    fig = apply_hoverlabel_font_colors(fig)
     return fig
 
 def create_sankey_links_for_dict(df, *columns):
@@ -566,6 +794,8 @@ def display_trend():
         y_tick_standoff=10,
         y_title_standoff=14
     )
+    filename = f"Energy Usage Trend {category}"
+    fig = set_plotly_download_filename(fig, filename)
     return fig
 
 ```
@@ -641,6 +871,16 @@ def display_treemap():
 
     fig.update_traces(marker_colors=complete_df['colour'])
     fig = apply_common_plotly_layout(fig, height=None)
+    fig.update_traces(
+        textfont=dict(
+            family=PLOTLY_FONT_FAMILY,
+            size=PLOTLY_FONT_SIZE,
+            color=complete_df['colour'].apply(plotly_font_color_for).tolist()
+        ),
+        selector=dict(type="treemap")
+    )
+    filename = f"Energy Usage Map {category}"
+    fig = set_plotly_download_filename(fig, filename)
     return fig
 
 ```
@@ -734,11 +974,13 @@ def explore_eeud_filtered():
 
 ```{python}
 @render.download(
-    label=download_button_label("Download CSV"),
-    filename=lambda: f"explore-{date.today().isoformat()}-{np.random.randint(100, 999)}.csv"
+    label=download_button_label("Download Chart Data"),
+    filename=lambda: csv_download_filename(
+        f"Stationary Energy Usage {input.explore_left_node()} by {input.explore_right_node()} {input.explore_period()}"
+    )
 )
 async def download_explore_filtered_data():
-    data = explore_eeud_filtered()  # Ensure that this fetch is thread-safe or handled correctly within the async context
+    data = build_explore_download_data()
     csv_data = data.to_csv(index=False)
     await asyncio.sleep(0.25)  # Simulating some processing time
     yield csv_data
@@ -823,6 +1065,8 @@ def display_explore_chart():
                 )
         )])
         fig = apply_common_plotly_layout(fig)
+        filename = f"Stationary Energy Usage {left_node} to {right_node} {input.explore_period()} Sankey"
+        fig = set_plotly_download_filename(fig, filename)
         return fig
 
     elif explore_chart_type.get() == 'Bar':
@@ -847,6 +1091,8 @@ def display_explore_chart():
             x_tick_standoff=10,
             y_tick_standoff=12
         )
+        filename = f"Stationary Energy Usage {left_node} by {right_node} {input.explore_period()} Bar"
+        fig = set_plotly_download_filename(fig, filename)
         return fig
 
 ``` 
@@ -931,11 +1177,13 @@ def timeseries_eeud_filtered():
 
 ```{python}
 @render.download(
-    label=download_button_label("Download CSV"),
-    filename=lambda: f"timeseries-{date.today().isoformat()}-{np.random.randint(100, 999)}.csv"
+    label=download_button_label("Download Chart Data"),
+    filename=lambda: csv_download_filename(
+        f"Energy Usage Time Series {input.timeseries_category()} {input.timeseries_display()}"
+    )
 )
 async def download_timeseries_filtered_data():
-    data = timeseries_eeud_filtered()  # Ensure that this fetch is thread-safe or handled correctly within the async context
+    data = build_timeseries_download_data()
     csv_data = data.to_csv(index=False)
     await asyncio.sleep(0.25)  # Simulating some processing time
     yield csv_data
@@ -1013,6 +1261,8 @@ def display_timeseries_chart():
                 )
         )])
         fig = apply_common_plotly_layout(fig)
+        filename = f"Energy Usage Time Series {category} {input.timeseries_display()} Alluvial"
+        fig = set_plotly_download_filename(fig, filename)
         return fig
 
     elif timeseries_chart_type.get() == 'Line':
@@ -1038,6 +1288,8 @@ def display_timeseries_chart():
             y_tick_standoff=10,
             y_title_standoff=14
         )
+        filename = f"Energy Usage Time Series {category} {input.timeseries_display()} Line"
+        fig = set_plotly_download_filename(fig, filename)
         return fig
 
     elif timeseries_chart_type.get() == 'Area':
@@ -1056,6 +1308,8 @@ def display_timeseries_chart():
         else:
             fig.update_traces(hovertemplate="%{customdata[0]} / %{x}<br>%{y:.1f}%<extra></extra>")
         fig = apply_common_plotly_layout(fig)
+        filename = f"Energy Usage Time Series {category} {input.timeseries_display()} Area"
+        fig = set_plotly_download_filename(fig, filename)
         return fig
 
 ``` 
@@ -1129,11 +1383,11 @@ def data_eeud_filtered():
 
 ```{python}
 @render.download(
-    label=download_button_label("Download CSV"),
-    filename=lambda: f"data-{date.today().isoformat()}-{np.random.randint(100, 999)}.csv"
+    label=download_button_label("Download Table"),
+    filename=lambda: csv_download_filename("EEUD Data")
 )
 async def download_data_filtered_data():
-    data = data_eeud_filtered()  # Ensure that this fetch is thread-safe or handled correctly within the async context
+    data = build_data_grid_download_data()
     csv_data = data.to_csv(index=False)
     await asyncio.sleep(0.25)  # Simulating some processing time
     yield csv_data
@@ -1144,20 +1398,6 @@ async def download_data_filtered_data():
 ```{python} 
 @render.data_frame
 def dataview():
-    data = data_eeud_filtered()
-    data = data.drop(['SectorANZSIC', 'PeriodEndDate', 'Transport'], axis=1)
-    data['TJ'] = data['TJ'].round(2)
-    data = data.rename(columns={
-        'EndUse': 'End Use',
-        'EndUseGroup': 'End Use Group',
-        'Fuel': 'Fuel',
-        'FuelGroup': 'Fuel Group',
-        'Sector': 'Sector',
-        'SectorGroup': 'Sector Group',
-        'Technology': 'Technology',
-        'TechnologyGroup': 'Technology Group',
-        'TJ': 'Energy Usage (TJ)',
-        'Period': 'Year',
-    })
+    data = build_data_grid_download_data()
     return render.DataGrid(data, width="100%", summary=False)
 ```

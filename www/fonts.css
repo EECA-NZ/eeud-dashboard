@@ -1,0 +1,53 @@
+@font-face {
+    font-family: "National 2";
+    src: url("fonts/national-2-regular.woff2") format("woff2");
+    font-style: normal;
+    font-weight: 400;
+    font-stretch: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "National 2";
+    src: url("fonts/national-2-regular-italic.woff2") format("woff2");
+    font-style: italic;
+    font-weight: 400;
+    font-stretch: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "National 2";
+    src: url("fonts/national-2-medium.woff2") format("woff2");
+    font-style: normal;
+    font-weight: 500;
+    font-stretch: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "National 2";
+    src: url("fonts/national-2-bold.woff2") format("woff2");
+    font-style: normal;
+    font-weight: 700;
+    font-stretch: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "National 2";
+    src: url("fonts/national-2-condensed-regular.woff2") format("woff2");
+    font-style: normal;
+    font-weight: 400;
+    font-stretch: condensed;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "National 2";
+    src: url("fonts/national-2-condensed-medium.woff2") format("woff2");
+    font-style: normal;
+    font-weight: 500;
+    font-stretch: condensed;
+    font-display: swap;
+}

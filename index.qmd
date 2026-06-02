@@ -1,6 +1,8 @@
 --- 
 title: "Energy End-Use Database"
 logo: "https://eecagovtnz.sharepoint.com/SiteAssets/__rectSitelogo__Only%20EECA%20white.png"
+resources:
+  - www/
 format: 
   dashboard:
     theme: "eeca.scss"
@@ -9,11 +11,15 @@ format:
         - file: www/google-analytics.html
         - file: www/pendo-analytics.html
         - text: |
+            <link rel="stylesheet" href="www/fonts.css">
+        - text: |
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
         - text: |
             <script async src="https://cdn.jsdelivr.net/npm/@iframe-resizer/child@latest" type="text/javascript"></script>
         - text: |
             <script src="www/slider-label-bounds.js"></script>
+        - text: |
+            <script src="www/single-selectize-behaviour.js"></script>
 server: shiny
 ---
 
@@ -108,10 +114,10 @@ def color_dict_for(dimension):
     return fuel_group_dict 
 
 MIN_PLOT_HEIGHT = 720
-PLOTLY_FONT_FAMILY = "Barlow"
-PLOTLY_FONT_SIZE = 13
-PLOTLY_AXIS_TITLE_SIZE = 13
-PLOTLY_LEGEND_TITLE_SIZE = 13
+PLOTLY_FONT_FAMILY = "National 2"
+PLOTLY_FONT_SIZE = 14
+PLOTLY_AXIS_TITLE_SIZE = 14
+PLOTLY_LEGEND_TITLE_SIZE = 14
 PLOTLY_FONT_COLOR_LIGHT = "#000000"
 PLOTLY_FONT_COLOR_DARK = "#FFFFFF"
 
@@ -123,6 +129,8 @@ def set_plotly_download_filename(fig, title):
     widget = fig if isinstance(fig, FigureWidget) else FigureWidget(fig)
     widget._config = {
         **widget._config,
+        "scrollZoom": False,
+        "doubleClick": False,
         "toImageButtonOptions": {
             **widget._config.get("toImageButtonOptions", {}),
             "filename": filename,
@@ -454,19 +462,22 @@ def apply_common_plotly_layout(fig, height=MIN_PLOT_HEIGHT):
         ),
         modebar_remove=[
             "zoom", "pan", "select", "lasso",
-            "zoomin", "zoomout", "autoscale"
+            "zoomin", "zoomout", "autoscale", "resetScale2d"
         ],
         modebar_bgcolor="rgba(0,0,0,0)",
         modebar_color="rgba(0,0,0,255)",
+        dragmode=False,
         paper_bgcolor=paper_bgcolor,
         plot_bgcolor=plot_bgcolor,
         # margin=dict(l=20, r=20, t=40, b=20),
     )
     fig.update_xaxes(
+        fixedrange=True,
         tickfont=dict(size=PLOTLY_FONT_SIZE, color=font_color),
         title_font=dict(size=PLOTLY_AXIS_TITLE_SIZE, color=font_color)
     )
     fig.update_yaxes(
+        fixedrange=True,
         tickfont=dict(size=PLOTLY_FONT_SIZE, color=font_color),
         title_font=dict(size=PLOTLY_AXIS_TITLE_SIZE, color=font_color)
     )
@@ -487,6 +498,17 @@ def apply_common_plotly_layout(fig, height=MIN_PLOT_HEIGHT):
         selector=dict(type="treemap")
     )
     fig = apply_hoverlabel_font_colors(fig)
+    return fig
+
+def apply_plotly_gridlines(fig, *, xaxis=False, yaxis=False):
+    grid_updates = dict(
+        gridcolor="#C0EBEB",
+        gridwidth=1,
+        griddash="1px"
+    )
+
+    fig.update_xaxes(showgrid=xaxis, **grid_updates)
+    fig.update_yaxes(showgrid=yaxis, **grid_updates)
     return fig
 
 def create_sankey_links_for_dict(df, *columns):
@@ -652,27 +674,27 @@ def total_use():
         f"{round(eeud[eeud.Period==max(eeud.Period)]['TJ'].sum()/1000)*1000:,} TJ",
         ui.tags.p(f"Total Energy Use {max(eeud.Period)}", class_="value-box-caption"),
         showcase=ui.tags.i(class_="fa-solid fa-bolt", **{"aria-hidden": "true"}),
-        theme="secondary",
+        theme="primary",
         showcase_layout="left center",
     )
 ```
 
-#### Row {.toolbar}
+#### Row {.toolbar .overview-toolbar}
 
-<div style="flex-grow: 1; text-align: left;">
+<div class="form-group shiny-input-container overview-toolbar-summary">
 
 ```{python}
 #| echo: false
 max_year = int(eeud["Period"].max())
-ui.tags.p(
+ui.tags.label(
     f"Values presented for {max_year}",
-    style="font-size: 1rem; padding-top: 1rem; line-height: 0px;"
+    class_="control-label overview-toolbar-label"
 )
 ```
 
 </div>
 
-<div class="overview-showcase-control" style="flex-grow: 0; margin-left: auto; text-align: left; padding-left: 0.375px;">
+<div class="overview-showcase-control">
 
 ```{python}
 #| echo: false
@@ -723,11 +745,16 @@ def largest_increase():
     data_last_two_years = eeud[(eeud['Period'].isin([max_year, max_year - 1]))&(~eeud[category].str.contains('Unknown'))]
     summed_data = data_last_two_years.groupby([category, 'Period']).agg({'TJ': 'sum'}).unstack()
     summed_data['growth'] = summed_data[('TJ', max_year)] - summed_data[('TJ', max_year - 1)]
-    max_growth = summed_data['growth'].idxmax()
+    summed_data = summed_data[summed_data['growth']>0]
+    if len(summed_data) > 0:
+        max_growth_label = summed_data['growth'].idxmax()
+        max_growth_value = f"+{abs(round(summed_data['growth'].max()/10)*10):,}  TJ"
+    else:
+        max_growth_label, max_growth_value = "–", "—"
 
     return ui.value_box(
-        max_growth,
-        f"{round(summed_data['growth'].max()/10)*10:,} TJ",
+        max_growth_label,
+        max_growth_value,
         ui.tags.p("Largest Increase YoY", class_="value-box-caption"),
         showcase=ui.tags.i(class_="fa-solid fa-angles-up", **{"aria-hidden": "true"}),
         theme="secondary",
@@ -745,11 +772,16 @@ def largest_decrease():
     data_last_two_years = eeud[(eeud['Period'].isin([max_year, max_year - 1]))&(~eeud[category].str.contains('Unknown'))]
     summed_data = data_last_two_years.groupby([category, 'Period']).agg({'TJ': 'sum'}).unstack()
     summed_data['growth'] = summed_data[('TJ', max_year)] - summed_data[('TJ', max_year - 1)]
-    min_growth = summed_data['growth'].idxmin()
+    summed_data = summed_data[summed_data['growth']<0]
+    if len(summed_data) > 0:
+        min_growth_label = summed_data['growth'].idxmin()
+        min_growth_value = f"−{abs(round(summed_data['growth'].min()/10)*10):,}  TJ"
+    else:
+        min_growth_label, min_growth_value = "–", "—"
 
     return ui.value_box(
-        min_growth,
-        f"{round(summed_data['growth'].min()/10)*10:,} TJ",
+        min_growth_label,
+        min_growth_value,
         ui.tags.p("Largest Decrease YoY", class_="value-box-caption"),
         showcase=ui.tags.i(class_="fa-solid fa-angles-down", **{"aria-hidden": "true"}),
         theme="secondary",
@@ -794,6 +826,7 @@ def display_trend():
         y_tick_standoff=10,
         y_title_standoff=14
     )
+    fig = apply_plotly_gridlines(fig, yaxis=True)
     filename = f"Energy Usage Trend {category}"
     fig = set_plotly_download_filename(fig, filename)
     return fig
@@ -863,10 +896,11 @@ def display_treemap():
         values=complete_df['TJ'].fillna(0).astype('int'),
         #marker=dict(colors=complete_df['colour']),
         #texttemplate="<span style='font-size:15.3px; font-weight:500;'>%{label}</span><br><span>%{value}</span>",
+        texttemplate="%{label}<br>%{value} TJ",
         textposition="middle center",
         branchvalues="total",
-        hoverinfo='value',
-        hovertemplate='%{label}<br>%{value} TJ<extra></extra>'
+        hoverinfo="value",
+        hovertemplate="%{label}<br>%{value} TJ<extra></extra>"
     )])
 
     fig.update_traces(marker_colors=complete_df['colour'])
@@ -1048,6 +1082,7 @@ def display_explore_chart():
         
         explore_links, explore_nodes = create_sankey_links_for_dict(explore_df, left_node, right_node)
         fig = go.Figure(data=[go.Sankey(
+            arrangement="fixed",
             node = dict(
                 pad = 15,
                 thickness = 20,
@@ -1091,6 +1126,7 @@ def display_explore_chart():
             x_tick_standoff=10,
             y_tick_standoff=12
         )
+        fig = apply_plotly_gridlines(fig, xaxis=True)
         filename = f"Stationary Energy Usage {left_node} by {right_node} {input.explore_period()} Bar"
         fig = set_plotly_download_filename(fig, filename)
         return fig
@@ -1246,6 +1282,7 @@ def display_timeseries_chart():
     if timeseries_chart_type.get() == 'Alluvial':
         timeseries_links, timeseries_nodes = create_alluvial_links_for_dict(timeseries_eeud_filtered(), category, 'PeriodEndDate')
         fig = go.Figure(data=[go.Sankey(
+            arrangement="fixed",
             node = dict(
                 pad = 15,
                 thickness = 20,
@@ -1288,6 +1325,7 @@ def display_timeseries_chart():
             y_tick_standoff=10,
             y_title_standoff=14
         )
+        fig = apply_plotly_gridlines(fig, yaxis=True)
         filename = f"Energy Usage Time Series {category} {input.timeseries_display()} Line"
         fig = set_plotly_download_filename(fig, filename)
         return fig
@@ -1308,6 +1346,14 @@ def display_timeseries_chart():
         else:
             fig.update_traces(hovertemplate="%{customdata[0]} / %{x}<br>%{y:.1f}%<extra></extra>")
         fig = apply_common_plotly_layout(fig)
+        fig = apply_cartesian_axis_padding(
+            fig,
+            margin=dict(l=28, r=20, t=48, b=32),
+            x_tick_standoff=10,
+            y_tick_standoff=10,
+            y_title_standoff=14
+        )
+        fig = apply_plotly_gridlines(fig, yaxis=True)
         filename = f"Energy Usage Time Series {category} {input.timeseries_display()} Area"
         fig = set_plotly_download_filename(fig, filename)
         return fig

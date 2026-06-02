@@ -118,6 +118,8 @@ label {
         background-color: $silver !important;
         border: 0 !important;
         overflow-y: auto !important;
+        padding-left: $def-padding !important;
+        padding-right: $def-padding !important;
     }
 }
 
@@ -156,9 +158,16 @@ label {
     }
 
     .navbar-brand-container {
+
+        padding-top: 0 !important;
+        padding-bottom: $def-padding !important;
+
+        .navbar-title {
+            vertical-align: top !important;
+        }
         
         .navbar-title-text {
-            font-size: 32px !important;
+            font-size: 50px !important;
             font-stretch: condensed !important;
             font-weight: $medium !important;
         }
@@ -173,6 +182,7 @@ label {
             cursor: default !important;
             pointer-events: none !important;
         }
+
     }
 
     .navbar-nav {
@@ -305,6 +315,7 @@ shiny-data-frame {
     background-color: $silver !important;
     border: 0 !important;
     //color: $black;
+    padding: $def-padding !important;
 
     &-bottom {
         background-color: $silver !important;

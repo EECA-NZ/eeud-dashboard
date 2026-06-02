@@ -1,6 +1,6 @@
 --- 
-title: "Energy End-Use Database"
-logo: "https://eecagovtnz.sharepoint.com/SiteAssets/__rectSitelogo__Only%20EECA%20white.png"
+title: "Energy End Use Database"
+#logo: "https://eecagovtnz.sharepoint.com/SiteAssets/__rectSitelogo__Only%20EECA%20white.png"
 resources:
   - www/
 format: 

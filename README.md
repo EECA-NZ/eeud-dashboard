@@ -84,3 +84,7 @@ In the testing of deployment of this dashboard, a number of difficulties were en
 -  Quarto Dashboard docs: https://quarto.org/docs/dashboards/
 
 -  Shiny for Python docs: https://shiny.posit.co/py/api/core/
+
+## Disclaimers
+
+This project includes licensed fonts. See fonts/README.md for licensing and usage restrictions.

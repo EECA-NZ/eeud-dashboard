@@ -1,0 +1,3 @@
+# Font licensing notice
+
+This dashboard uses the National 2 font family, licensed from Klim Type Foundry. The font files are provided solely for use by EECA and may not be copied, redistributed, modified, embedded elsewhere, or used for any other purpose without a valid license. Access to this code repository does not grant any rights to the font files. Unauthorized use may violate copyright law and the applicable license terms. For licensing details, please refer to Klim Type Foundry.

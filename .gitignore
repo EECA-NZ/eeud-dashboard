@@ -8,3 +8,4 @@ index.ipynb
 /.quarto/
 /.venv/
 **/*.quarto_ipynb
+_quarto_internal*

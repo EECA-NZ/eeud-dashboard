@@ -1,6 +1,8 @@
 --- 
-title: "Energy End-Use Database"
-logo: "https://eecagovtnz.sharepoint.com/SiteAssets/__rectSitelogo__Only%20EECA%20white.png"
+title: "Energy End Use Database"
+#logo: "https://eecagovtnz.sharepoint.com/SiteAssets/__rectSitelogo__Only%20EECA%20white.png"
+resources:
+  - www/
 format: 
   dashboard:
     theme: "eeca.scss"
@@ -9,16 +11,22 @@ format:
         - file: www/google-analytics.html
         - file: www/pendo-analytics.html
         - text: |
+            <link rel="stylesheet" href="www/fonts.css">
+        - text: |
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+        - text: |
             <script async src="https://cdn.jsdelivr.net/npm/@iframe-resizer/child@latest" type="text/javascript"></script>
+        - text: |
+            <script src="www/slider-label-bounds.js"></script>
+        - text: |
+            <script src="www/single-selectize-behaviour.js"></script>
 server: shiny
 ---
 
 ```{python}
 # Built-in modules
 import asyncio
-from datetime import date
 import math
-import random
 import re
 
 # Additional modules, ensure these are added to the requirements file
@@ -26,6 +34,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.graph_objects import FigureWidget
 
 # Dashboard modules
 from shiny import render, reactive, ui
@@ -68,6 +77,17 @@ sector_groups = {group: set(sub_df['Sector'].dropna()) for group, sub_df in eeud
 def title_case(s):
     return re.sub(r"(_|-)+", " ", s).title().replace(" ", "")
 
+def download_button_label(text):
+    icon = ui.tags.i(class_="fa-solid fa-download download-button-icon", **{"aria-hidden": "true"})
+    return ui.span(icon, text, class_="download-button-label")
+
+def chart_type_button_label(icon_class, text):
+    return ui.span(
+        ui.tags.i(class_=f"fa-solid {icon_class} chart-type-button-icon", **{"aria-hidden": "true"}),
+        ui.span(text, class_="chart-type-button-text"),
+        class_="chart-type-button-label"
+    )
+
 def hex_to_rgba(hex, alpha=1):
     hex = hex.replace('#','')
     return f"rgba{tuple([int(hex[i:i+2], 16) for i in (0, 2, 4)] + [alpha])}"
@@ -94,23 +114,405 @@ def color_dict_for(dimension):
     return fuel_group_dict 
 
 MIN_PLOT_HEIGHT = 720
+PLOTLY_FONT_FAMILY = "Arial, sans-serif"
+PLOTLY_FONT_SIZE = 14
+PLOTLY_AXIS_TITLE_SIZE = 14
+PLOTLY_LEGEND_TITLE_SIZE = 14
+PLOTLY_FONT_COLOR_LIGHT = "#000000"
+PLOTLY_FONT_COLOR_DARK = "#FFFFFF"
+
+def slugify_download_title(title):
+    return re.sub(r"[^a-z0-9]+", "-", str(title).strip().lower()).strip("-")
+
+def set_plotly_download_filename(fig, title):
+    filename = slugify_download_title(title) or "eeud-chart"
+    widget = fig if isinstance(fig, FigureWidget) else FigureWidget(fig)
+    widget._config = {
+        **widget._config,
+        "scrollZoom": False,
+        "doubleClick": False,
+        "toImageButtonOptions": {
+            **widget._config.get("toImageButtonOptions", {}),
+            "filename": filename,
+            "format": "svg",
+            "width": 825,
+            "height": 900,
+        },
+    }
+    return widget
+
+def csv_download_filename(title):
+    return f"{slugify_download_title(title) or 'eeud-data'}.csv"
+
+DOWNLOAD_FILTER_COLUMNS = {
+    "EndUse": "End Use",
+    "Fuel": "Fuel",
+    "Sector": "Sector",
+    "Technology": "Technology",
+}
+
+def active_download_filter_columns(view, excluded_columns=None):
+    excluded_columns = set(excluded_columns or [])
+
+    if view == "explore":
+        filter_state = {
+            "EndUse": input.explore_end_use(),
+            "Fuel": input.explore_fuels(),
+            "Sector": input.explore_sectors(),
+            "Technology": input.explore_technologies(),
+        }
+    elif view == "timeseries":
+        filter_state = {
+            "EndUse": input.timeseries_end_use(),
+            "Fuel": input.timeseries_fuels(),
+            "Sector": input.timeseries_sectors(),
+            "Technology": input.timeseries_technologies(),
+        }
+    else:
+        filter_state = {}
+
+    return [
+        column
+        for column, values in filter_state.items()
+        if len(values) > 0 and column not in excluded_columns
+    ]
+
+def rename_download_columns(df, label_map):
+    renamed = {
+        column: label_map.get(column, column)
+        for column in df.columns
+    }
+    return df.rename(columns=renamed)
+
+def build_explore_download_data():
+    left_node = title_case(input.explore_left_node())
+    right_node = title_case(input.explore_right_node())
+    data = explore_eeud_filtered().copy()
+
+    if left_node == right_node:
+        data["Proxy"] = "Total Energy Use"
+        right_node = "Proxy"
+
+    extra_index_columns = active_download_filter_columns(
+        "explore",
+        excluded_columns={left_node, right_node, "Proxy"}
+    )
+    index_columns = [left_node, *extra_index_columns]
+
+    grouped = (
+        data.groupby(index_columns + [right_node], dropna=False)["TJ"]
+        .sum()
+        .reset_index()
+    )
+
+    wide = (
+        grouped.pivot_table(
+            index=index_columns,
+            columns=right_node,
+            values="TJ",
+            aggfunc="sum",
+            fill_value=0,
+        )
+        .reset_index()
+    )
+
+    if hasattr(wide.columns, "name"):
+        wide.columns.name = None
+
+    return rename_download_columns(
+        wide,
+        {
+            left_node: input.explore_left_node(),
+            **{column: DOWNLOAD_FILTER_COLUMNS[column] for column in extra_index_columns},
+        }
+    )
+
+def build_timeseries_download_data():
+    category = title_case(input.timeseries_category())
+    data = timeseries_eeud_filtered().copy()
+    extra_index_columns = active_download_filter_columns(
+        "timeseries",
+        excluded_columns={category}
+    )
+    index_columns = [category, *extra_index_columns]
+
+    grouped = (
+        data.groupby(index_columns + ["Period"], dropna=False)["TJ"]
+        .sum()
+        .reset_index()
+    )
+
+    if input.timeseries_display() == "Proportional":
+        totals = grouped.groupby("Period")["TJ"].transform("sum")
+        grouped["TJ"] = np.where(totals > 0, grouped["TJ"] / totals * 100, 0)
+
+    wide = (
+        grouped.pivot_table(
+            index=index_columns,
+            columns="Period",
+            values="TJ",
+            aggfunc="sum",
+            fill_value=0,
+        )
+        .reset_index()
+    )
+
+    if hasattr(wide.columns, "name"):
+        wide.columns.name = None
+
+    return rename_download_columns(
+        wide,
+        {
+            category: input.timeseries_category(),
+            **{column: DOWNLOAD_FILTER_COLUMNS[column] for column in extra_index_columns},
+        }
+    )
+
+def build_data_grid_download_data():
+    data = data_eeud_filtered().copy()
+    data = data.drop(['SectorANZSIC', 'PeriodEndDate', 'Transport'], axis=1)
+    data['TJ'] = data['TJ'].round(2)
+    data = data.rename(columns={
+        'EndUse': 'End Use',
+        'EndUseGroup': 'End Use Group',
+        'Fuel': 'Fuel',
+        'FuelGroup': 'Fuel Group',
+        'Sector': 'Sector',
+        'SectorGroup': 'Sector Group',
+        'Technology': 'Technology',
+        'TechnologyGroup': 'Technology Group',
+        'TJ': 'Energy Usage (TJ)',
+        'Period': 'Year',
+    })
+    return data
+
+def rgb_channel_to_linear(channel):
+    channel = channel / 255
+    if channel <= 0.04045:
+        return channel / 12.92
+    return ((channel + 0.055) / 1.055) ** 2.4
+
+def relative_luminance(red, green, blue):
+    return (
+        0.2126 * rgb_channel_to_linear(red)
+        + 0.7152 * rgb_channel_to_linear(green)
+        + 0.0722 * rgb_channel_to_linear(blue)
+    )
+
+def plotly_font_color_for(background_color):
+    if not background_color:
+        return PLOTLY_FONT_COLOR_LIGHT
+
+    background_color = str(background_color).strip()
+
+    hex_match = re.fullmatch(r"#([0-9a-fA-F]{6})", background_color)
+    if hex_match:
+        hex_value = hex_match.group(1)
+        red = int(hex_value[0:2], 16)
+        green = int(hex_value[2:4], 16)
+        blue = int(hex_value[4:6], 16)
+        return (
+            PLOTLY_FONT_COLOR_DARK
+            if relative_luminance(red, green, blue) < 0.45
+            else PLOTLY_FONT_COLOR_LIGHT
+        )
+
+    rgb_match = re.fullmatch(
+        r"rgba?\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})(?:\s*,\s*(?:[01](?:\.\d+)?)\s*)?\)",
+        background_color
+    )
+    if rgb_match:
+        red, green, blue = (int(value) for value in rgb_match.groups())
+        return (
+            PLOTLY_FONT_COLOR_DARK
+            if relative_luminance(red, green, blue) < 0.45
+            else PLOTLY_FONT_COLOR_LIGHT
+        )
+
+    return PLOTLY_FONT_COLOR_LIGHT
+
+def hover_font_colors_for(color_values):
+    if color_values is None:
+        return None
+
+    if isinstance(color_values, pd.Series):
+        color_values = color_values.tolist()
+    elif isinstance(color_values, np.ndarray):
+        color_values = color_values.tolist()
+
+    if isinstance(color_values, (list, tuple)):
+        return [plotly_font_color_for(value) for value in color_values]
+
+    return plotly_font_color_for(color_values)
+
+def trace_hover_color_source(trace):
+    if trace.type == "treemap":
+        return getattr(getattr(trace, "marker", None), "colors", None)
+
+    marker = getattr(trace, "marker", None)
+    if marker is not None and getattr(marker, "color", None) is not None:
+        return marker.color
+
+    line = getattr(trace, "line", None)
+    if line is not None and getattr(line, "color", None) is not None:
+        return line.color
+
+    if getattr(trace, "fillcolor", None) is not None:
+        return trace.fillcolor
+
+    return None
+
+def apply_hoverlabel_font_colors(fig):
+    for trace in fig.data:
+        if trace.type == "sankey":
+            node_colors = hover_font_colors_for(getattr(trace.node, "color", None))
+            link_colors = hover_font_colors_for(getattr(trace.link, "color", None))
+
+            if node_colors is not None:
+                trace.node.hoverlabel = dict(
+                    font=dict(
+                        family=PLOTLY_FONT_FAMILY,
+                        size=PLOTLY_FONT_SIZE,
+                        color=node_colors
+                    )
+                )
+
+            if link_colors is not None:
+                trace.link.hoverlabel = dict(
+                    font=dict(
+                        family=PLOTLY_FONT_FAMILY,
+                        size=PLOTLY_FONT_SIZE,
+                        color=link_colors
+                    )
+                )
+
+            continue
+
+        hover_colors = hover_font_colors_for(trace_hover_color_source(trace))
+        if hover_colors is None:
+            continue
+
+        trace.hoverlabel = dict(
+            font=dict(
+                family=PLOTLY_FONT_FAMILY,
+                size=PLOTLY_FONT_SIZE,
+                color=hover_colors
+            )
+        )
+
+    return fig
+
+def apply_cartesian_axis_padding(
+    fig,
+    margin=None,
+    x_tick_standoff=8,
+    y_tick_standoff=8,
+    x_title_standoff=10,
+    y_title_standoff=10
+):
+    margin = margin or dict(l=24, r=24, t=40, b=24)
+
+    fig.update_layout(margin=margin)
+
+    x_axis_updates = dict(
+        automargin=True,
+        title_standoff=x_title_standoff
+    )
+    y_axis_updates = dict(
+        automargin=True,
+        title_standoff=y_title_standoff
+    )
+
+    try:
+        fig.update_xaxes(
+            ticklabelstandoff=x_tick_standoff,
+            **x_axis_updates
+        )
+        fig.update_yaxes(
+            ticklabelstandoff=y_tick_standoff,
+            **y_axis_updates
+        )
+    except ValueError:
+        # Older Plotly releases may not support ticklabelstandoff.
+        fig.update_xaxes(**x_axis_updates)
+        fig.update_yaxes(**y_axis_updates)
+
+    return fig
+
 def apply_common_plotly_layout(fig, height=MIN_PLOT_HEIGHT):
+    paper_bgcolor = fig.layout.paper_bgcolor or "rgba(255,255,255,255)"
+    plot_bgcolor = fig.layout.plot_bgcolor or paper_bgcolor
+    font_color = plotly_font_color_for(plot_bgcolor or paper_bgcolor)
+
     #if height is not None:
     #    fig.update_layout(
     #        height=height
     #    )
     fig.update_layout(
-        font_family="Barlow",
+        font=dict(
+            family=PLOTLY_FONT_FAMILY,
+            size=PLOTLY_FONT_SIZE
+        ),
+        hoverlabel=dict(
+            font=dict(
+                family=PLOTLY_FONT_FAMILY,
+                size=PLOTLY_FONT_SIZE
+            )
+        ),
+        legend=dict(
+            font=dict(size=PLOTLY_FONT_SIZE, color=font_color),
+            title=dict(font=dict(size=PLOTLY_LEGEND_TITLE_SIZE, color=font_color))
+        ),
         modebar_remove=[
-            "zoom", "pan", "select", "lasso",
-            "zoomin", "zoomout", "autoscale"
+            "zoom", "pan", "select", "lasso", "zoomIn", "zoomOut",
+            "autoScale", "resetScale", "resetViews", "resetSankeyGroup",
+            "resetScale2d", "resetCameraDefault3d", "resetViewMapbox",
         ],
         modebar_bgcolor="rgba(0,0,0,0)",
-        modebar_color="rgba(22,64,87,255)",
-        paper_bgcolor="rgba(232,236,238,255)",
-        plot_bgcolor="rgba(232,236,238,255)",
+        modebar_color="rgba(0,0,0,255)",
+        dragmode=False,
+        paper_bgcolor=paper_bgcolor,
+        plot_bgcolor=plot_bgcolor,
         # margin=dict(l=20, r=20, t=40, b=20),
     )
+    fig.update_xaxes(
+        fixedrange=True,
+        tickfont=dict(size=PLOTLY_FONT_SIZE, color=font_color),
+        title_font=dict(size=PLOTLY_AXIS_TITLE_SIZE, color=font_color)
+    )
+    fig.update_yaxes(
+        fixedrange=True,
+        tickfont=dict(size=PLOTLY_FONT_SIZE, color=font_color),
+        title_font=dict(size=PLOTLY_AXIS_TITLE_SIZE, color=font_color)
+    )
+    fig.update_annotations(font=dict(size=PLOTLY_FONT_SIZE, color=font_color))
+    fig.update_traces(
+        textfont=dict(
+            family=PLOTLY_FONT_FAMILY,
+            size=PLOTLY_FONT_SIZE,
+            color=font_color
+        ),
+        selector=dict(type="sankey")
+    )
+    fig.update_traces(
+        textfont=dict(
+            family=PLOTLY_FONT_FAMILY,
+            size=PLOTLY_FONT_SIZE
+        ),
+        selector=dict(type="treemap")
+    )
+    fig = apply_hoverlabel_font_colors(fig)
+    return fig
+
+def apply_plotly_gridlines(fig, *, xaxis=False, yaxis=False):
+    grid_updates = dict(
+        gridcolor="#C0EBEB",
+        gridwidth=1,
+        griddash="1px"
+    )
+
+    fig.update_xaxes(showgrid=xaxis, **grid_updates)
+    fig.update_yaxes(showgrid=yaxis, **grid_updates)
     return fig
 
 def create_sankey_links_for_dict(df, *columns):
@@ -266,52 +668,51 @@ def create_alluvial_links_for_dict(df, category_column, date_column, date_freq='
 
 ### Column {width=40%}
 
-#### Row {.toolbar}
-
-<div style="flex-grow: 1; text-align: left;">
-
-```{python}
-#| echo: false
-max_year = int(eeud["Period"].max())
-ui.tags.p(
-    f"Values presented for {max_year}",
-    style="font-size: 1rem; padding-top: 1rem; line-height: 0px;"
-)
-```
-
-</div>
-
-<div style="flex-grow: 0; text-align: right; padding-left: 0.375px;">
-
-```{python}
-#| echo: false
-ui.input_select(
-    "highlight_category",
-    "Showcase",
-    choices=["End Use", "Fuel", "Sector", "Technology"],
-    selected="Fuel"
-)
-```
-
-</div>
-
 #### Row
 
 ```{python}
 @render.ui
 def total_use():
     return ui.value_box(
-        f"Total Energy Use {max(eeud.Period)} (TJ)",
-        f"{round(eeud[eeud.Period==max(eeud.Period)]['TJ'].sum()/1000)*1000:,}",
-        showcase=ui.HTML('''
-            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-lightning-charge" viewBox="0 0 16 16">
-                <path d="M11.251.068a.5.5 0 0 1 .227.58L9.677 6.5H13a.5.5 0 0 1 .364.843l-8 8.5a.5.5 0 0 1-.842-.49L6.323 9.5H3a.5.5 0 0 1-.364-.843l8-8.5a.5.5 0 0 1 .615-.09zM4.157 8.5H7a.5.5 0 0 1 .478.647L6.11 13.59l5.732-6.09H9a.5.5 0 0 1-.478-.647L9.89 2.41z"/>
-            </svg>
-        '''),
-        theme="secondary",
+        None,
+        f"{round(eeud[eeud.Period==max(eeud.Period)]['TJ'].sum()/1000)*1000:,} TJ",
+        ui.tags.p(f"Total Energy Use {max(eeud.Period)}", class_="value-box-caption"),
+        showcase=ui.tags.i(class_="fa-solid fa-bolt", **{"aria-hidden": "true"}),
+        theme="primary",
         showcase_layout="left center",
     )
 ```
+
+#### Row {.toolbar .overview-toolbar}
+
+<div class="form-group shiny-input-container overview-toolbar-summary">
+
+```{python}
+#| echo: false
+max_year = int(eeud["Period"].max())
+ui.tags.label(
+    f"Values presented for {max_year}",
+    class_="control-label overview-toolbar-label"
+)
+```
+
+</div>
+
+<div class="overview-showcase-control">
+
+```{python}
+#| echo: false
+ui.input_selectize(
+    "highlight_category",
+    "Showcase",
+    choices=["End Use", "Fuel", "Sector", "Technology"],
+    selected="Fuel",
+    multiple=False
+)
+```
+
+</div>
+
 
 ### Column {width=60%}
 
@@ -331,12 +732,8 @@ def largest_use():
     return ui.value_box(
         max_use if len(max_use) <=32 else max_use[:32]+"...",
         f"{round(summed_data['TJ'].max()/10)*10:,} TJ",
-        f"Largest {category}",
-        showcase=ui.HTML('''
-            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-bar-chart-line" viewBox="0 0 16 16">
-                <path d="M11 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12h.5a.5.5 0 0 1 0 1H.5a.5.5 0 0 1 0-1H1v-3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3h1V7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7h1zm1 12h2V2h-2zm-3 0V7H7v7zm-5 0v-3H2v3z"/>
-            </svg>
-        '''),
+        ui.tags.p(f"Largest {category}", class_="value-box-caption"),
+        showcase=ui.tags.i(class_="fa-solid fa-ranking-star", **{"aria-hidden": "true"}),
         theme="secondary",
         showcase_layout="left center",
     )
@@ -352,17 +749,18 @@ def largest_increase():
     data_last_two_years = eeud[(eeud['Period'].isin([max_year, max_year - 1]))&(~eeud[category].str.contains('Unknown'))]
     summed_data = data_last_two_years.groupby([category, 'Period']).agg({'TJ': 'sum'}).unstack()
     summed_data['growth'] = summed_data[('TJ', max_year)] - summed_data[('TJ', max_year - 1)]
-    max_growth = summed_data['growth'].idxmax()
+    summed_data = summed_data[summed_data['growth']>0]
+    if len(summed_data) > 0:
+        max_growth_label = summed_data['growth'].idxmax()
+        max_growth_value = f"+{abs(round(summed_data['growth'].max()/10)*10):,}  TJ"
+    else:
+        max_growth_label, max_growth_value = "–", "—"
 
     return ui.value_box(
-        max_growth,
-        f"{round(summed_data['growth'].max()/10)*10:,} TJ",
-        "Largest Increase YoY",
-        showcase=ui.HTML('''
-            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-graph-up-arrow" viewBox="0 0 16 16">
-                <path fill-rule="evenodd" d="M0 0h1v15h15v1H0zm10 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0V4.9l-3.613 4.417a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61L13.445 4H10.5a.5.5 0 0 1-.5-.5"/>
-            </svg>
-        '''),
+        max_growth_label,
+        max_growth_value,
+        ui.tags.p("Largest Increase YoY", class_="value-box-caption"),
+        showcase=ui.tags.i(class_="fa-solid fa-angles-up", **{"aria-hidden": "true"}),
         theme="secondary",
         showcase_layout="left center",
     )
@@ -378,17 +776,18 @@ def largest_decrease():
     data_last_two_years = eeud[(eeud['Period'].isin([max_year, max_year - 1]))&(~eeud[category].str.contains('Unknown'))]
     summed_data = data_last_two_years.groupby([category, 'Period']).agg({'TJ': 'sum'}).unstack()
     summed_data['growth'] = summed_data[('TJ', max_year)] - summed_data[('TJ', max_year - 1)]
-    min_growth = summed_data['growth'].idxmin()
+    summed_data = summed_data[summed_data['growth']<0]
+    if len(summed_data) > 0:
+        min_growth_label = summed_data['growth'].idxmin()
+        min_growth_value = f"−{abs(round(summed_data['growth'].min()/10)*10):,}  TJ"
+    else:
+        min_growth_label, min_growth_value = "–", "—"
 
     return ui.value_box(
-        min_growth,
-        f"{round(summed_data['growth'].min()/10)*10:,} TJ",
-        "Largest Decrease YoY",
-        showcase=ui.HTML('''
-            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="bi bi-graph-down-arrow" viewBox="0 0 16 16">
-                <path fill-rule="evenodd" d="M0 0h1v15h15v1H0zm10 11.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 0-1 0v2.6l-3.613-4.417a.5.5 0 0 0-.74-.037L7.06 8.233 3.404 3.206a.5.5 0 0 0-.808.588l4 5.5a.5.5 0 0 0 .758.06l2.609-2.61L13.445 11H10.5a.5.5 0 0 0-.5.5"/>
-            </svg>
-        '''),
+        min_growth_label,
+        min_growth_value,
+        ui.tags.p("Largest Decrease YoY", class_="value-box-caption"),
+        showcase=ui.tags.i(class_="fa-solid fa-angles-down", **{"aria-hidden": "true"}),
         theme="secondary",
         showcase_layout="left center",
     )
@@ -424,6 +823,16 @@ def display_trend():
         xanchor="left", x=0))
     fig.update_xaxes(dtick=1)
     fig = apply_common_plotly_layout(fig, height=None)
+    fig = apply_cartesian_axis_padding(
+        fig,
+        margin=dict(l=28, r=20, t=48, b=32),
+        x_tick_standoff=10,
+        y_tick_standoff=10,
+        y_title_standoff=14
+    )
+    fig = apply_plotly_gridlines(fig, yaxis=True)
+    filename = f"Energy Usage Trend {category}"
+    fig = set_plotly_download_filename(fig, filename)
     return fig
 
 ```
@@ -491,14 +900,25 @@ def display_treemap():
         values=complete_df['TJ'].fillna(0).astype('int'),
         #marker=dict(colors=complete_df['colour']),
         #texttemplate="<span style='font-size:15.3px; font-weight:500;'>%{label}</span><br><span>%{value}</span>",
+        texttemplate="%{label}<br>%{value} TJ",
         textposition="middle center",
         branchvalues="total",
-        hoverinfo='value',
-        hovertemplate='%{label}<br>%{value} TJ<extra></extra>'
+        hoverinfo="value",
+        hovertemplate="%{label}<br>%{value} TJ<extra></extra>"
     )])
 
     fig.update_traces(marker_colors=complete_df['colour'])
     fig = apply_common_plotly_layout(fig, height=None)
+    fig.update_traces(
+        textfont=dict(
+            family=PLOTLY_FONT_FAMILY,
+            size=PLOTLY_FONT_SIZE,
+            color=complete_df['colour'].apply(plotly_font_color_for).tolist()
+        ),
+        selector=dict(type="treemap")
+    )
+    filename = f"Energy Usage Map {category}"
+    fig = set_plotly_download_filename(fig, filename)
     return fig
 
 ```
@@ -512,8 +932,18 @@ def display_treemap():
 <h5>Display</h5>
 
 ```{python}
-ui.input_select("explore_left_node", "From", choices=["End Use", "End Use Group", "Fuel", "Fuel Group", "Sector", "Sector Group", "Technology", "Technology Group"], selected="Fuel")
-ui.input_select("explore_right_node", "To", choices=["End Use", "End Use Group", "Fuel", "Fuel Group", "Sector", "Sector Group", "Technology", "Technology Group"], selected="End Use Group")
+ui.input_selectize(
+    "explore_left_node", "From",
+    choices=["End Use", "End Use Group", "Fuel", "Fuel Group", "Sector", "Sector Group", "Technology", "Technology Group"],
+    selected="Fuel",
+    multiple=False
+)
+ui.input_selectize(
+    "explore_right_node", "To",
+    choices=["End Use", "End Use Group", "Fuel", "Fuel Group", "Sector", "Sector Group", "Technology", "Technology Group"],
+    selected="End Use Group",
+    multiple=False
+)
 ```
 
 <br/>
@@ -582,11 +1012,13 @@ def explore_eeud_filtered():
 
 ```{python}
 @render.download(
-    label="Download CSV",
-    filename=lambda: f"explore-{date.today().isoformat()}-{np.random.randint(100, 999)}.csv"
+    label=download_button_label("Download Chart Data"),
+    filename=lambda: csv_download_filename(
+        f"Stationary Energy Usage {input.explore_left_node()} by {input.explore_right_node()} {input.explore_period()}"
+    )
 )
 async def download_explore_filtered_data():
-    data = explore_eeud_filtered()  # Ensure that this fetch is thread-safe or handled correctly within the async context
+    data = build_explore_download_data()
     csv_data = data.to_csv(index=False)
     await asyncio.sleep(0.25)  # Simulating some processing time
     yield csv_data
@@ -601,7 +1033,11 @@ async def download_explore_filtered_data():
 @render.ui
 def render_bar_button():
     btn_class = 'btn-primary' if explore_chart_type.get() == 'Bar' else 'btn-secondary'
-    return ui.input_action_button("explore_bar", "Bar Chart", class_=btn_class)
+    return ui.input_action_button(
+        "explore_bar",
+        chart_type_button_label("fa-chart-column", "Bar"),
+        class_=btn_class
+    )
 @reactive.effect
 def set_explore_bar_chart():
     input.explore_bar()
@@ -613,7 +1049,11 @@ def set_explore_bar_chart():
 @render.ui
 def render_sankey_button():
     btn_class = 'btn-primary' if explore_chart_type.get() == 'Sankey' else 'btn-secondary'
-    return ui.input_action_button("explore_sankey", "Sankey Chart", class_=btn_class)
+    return ui.input_action_button(
+        "explore_sankey",
+        chart_type_button_label("fa-chart-gantt", "Sankey"),
+        class_=btn_class
+    )
 @reactive.effect
 def set_explore_sankey_chart():
     input.explore_sankey()
@@ -646,6 +1086,7 @@ def display_explore_chart():
         
         explore_links, explore_nodes = create_sankey_links_for_dict(explore_df, left_node, right_node)
         fig = go.Figure(data=[go.Sankey(
+            arrangement="fixed",
             node = dict(
                 pad = 15,
                 thickness = 20,
@@ -663,6 +1104,8 @@ def display_explore_chart():
                 )
         )])
         fig = apply_common_plotly_layout(fig)
+        filename = f"Stationary Energy Usage {left_node} to {right_node} {input.explore_period()} Sankey"
+        fig = set_plotly_download_filename(fig, filename)
         return fig
 
     elif explore_chart_type.get() == 'Bar':
@@ -681,6 +1124,15 @@ def display_explore_chart():
         if right_node == 'Proxy':
             fig.update_layout(showlegend=False)
         fig = apply_common_plotly_layout(fig)
+        fig = apply_cartesian_axis_padding(
+            fig,
+            margin=dict(l=36, r=20, t=48, b=28),
+            x_tick_standoff=10,
+            y_tick_standoff=12
+        )
+        fig = apply_plotly_gridlines(fig, xaxis=True)
+        filename = f"Stationary Energy Usage {left_node} by {right_node} {input.explore_period()} Bar"
+        fig = set_plotly_download_filename(fig, filename)
         return fig
 
 ``` 
@@ -694,8 +1146,18 @@ def display_explore_chart():
 <h5>Display</h5>
 
 ```{python}
-ui.input_select("timeseries_category", "Category", choices=["End Use", "End Use Group", "Fuel", "Fuel Group", "Sector", "Sector Group", "Technology", "Technology Group"], selected="Fuel")
-ui.input_select("timeseries_display", "Values", choices=["Total", "Proportional"], selected="Total")
+ui.input_selectize(
+    "timeseries_category", "Category",
+    choices=["End Use", "End Use Group", "Fuel", "Fuel Group", "Sector", "Sector Group", "Technology", "Technology Group"],
+    selected="Fuel",
+    multiple=False
+)
+ui.input_selectize(
+    "timeseries_display", "Values",
+    choices=["Total", "Proportional"],
+    selected="Total",
+    multiple=False
+)
 ```
 
 <br/>
@@ -755,11 +1217,13 @@ def timeseries_eeud_filtered():
 
 ```{python}
 @render.download(
-    label="Download CSV",
-    filename=lambda: f"timeseries-{date.today().isoformat()}-{np.random.randint(100, 999)}.csv"
+    label=download_button_label("Download Chart Data"),
+    filename=lambda: csv_download_filename(
+        f"Energy Usage Time Series {input.timeseries_category()} {input.timeseries_display()}"
+    )
 )
 async def download_timeseries_filtered_data():
-    data = timeseries_eeud_filtered()  # Ensure that this fetch is thread-safe or handled correctly within the async context
+    data = build_timeseries_download_data()
     csv_data = data.to_csv(index=False)
     await asyncio.sleep(0.25)  # Simulating some processing time
     yield csv_data
@@ -774,12 +1238,20 @@ async def download_timeseries_filtered_data():
 @render.ui
 def render_timeseries_area_button():
     btn_class = 'btn-primary' if timeseries_chart_type.get() == 'Area' else 'btn-secondary'
-    return ui.input_action_button("timeseries_area", "Area Chart", class_=btn_class)
+    return ui.input_action_button(
+        "timeseries_area",
+        chart_type_button_label("fa-chart-area", "Area"),
+        class_=btn_class
+    )
 
 @render.ui
 def render_timeseries_line_button():
     btn_class = 'btn-primary' if timeseries_chart_type.get() == 'Line' else 'btn-secondary'
-    return ui.input_action_button("timeseries_line", "Line Chart", class_=btn_class)
+    return ui.input_action_button(
+        "timeseries_line",
+        chart_type_button_label("fa-chart-line", "Line"),
+        class_=btn_class
+    )
 
 @reactive.effect
 def set_timeseries_area_chart():
@@ -814,6 +1286,7 @@ def display_timeseries_chart():
     if timeseries_chart_type.get() == 'Alluvial':
         timeseries_links, timeseries_nodes = create_alluvial_links_for_dict(timeseries_eeud_filtered(), category, 'PeriodEndDate')
         fig = go.Figure(data=[go.Sankey(
+            arrangement="fixed",
             node = dict(
                 pad = 15,
                 thickness = 20,
@@ -829,6 +1302,8 @@ def display_timeseries_chart():
                 )
         )])
         fig = apply_common_plotly_layout(fig)
+        filename = f"Energy Usage Time Series {category} {input.timeseries_display()} Alluvial"
+        fig = set_plotly_download_filename(fig, filename)
         return fig
 
     elif timeseries_chart_type.get() == 'Line':
@@ -847,6 +1322,16 @@ def display_timeseries_chart():
         else:
             fig.update_traces(hovertemplate="%{customdata[0]} / %{x}<br>%{y:.1f}%<extra></extra>")
         fig = apply_common_plotly_layout(fig)
+        fig = apply_cartesian_axis_padding(
+            fig,
+            margin=dict(l=28, r=20, t=48, b=32),
+            x_tick_standoff=10,
+            y_tick_standoff=10,
+            y_title_standoff=14
+        )
+        fig = apply_plotly_gridlines(fig, yaxis=True)
+        filename = f"Energy Usage Time Series {category} {input.timeseries_display()} Line"
+        fig = set_plotly_download_filename(fig, filename)
         return fig
 
     elif timeseries_chart_type.get() == 'Area':
@@ -865,6 +1350,16 @@ def display_timeseries_chart():
         else:
             fig.update_traces(hovertemplate="%{customdata[0]} / %{x}<br>%{y:.1f}%<extra></extra>")
         fig = apply_common_plotly_layout(fig)
+        fig = apply_cartesian_axis_padding(
+            fig,
+            margin=dict(l=28, r=20, t=48, b=32),
+            x_tick_standoff=16,
+            y_tick_standoff=16,
+            y_title_standoff=14,
+        )
+        fig = apply_plotly_gridlines(fig, yaxis=True)
+        filename = f"Energy Usage Time Series {category} {input.timeseries_display()} Area"
+        fig = set_plotly_download_filename(fig, filename)
         return fig
 
 ``` 
@@ -928,6 +1423,8 @@ def data_eeud_filtered():
 
     data = data[data['Period'].between(input.data_period()[0], input.data_period()[1], inclusive='both')]
 
+    data = data[['EndUse', 'EndUseGroup', 'Fuel', 'FuelGroup', 'Sector', 'SectorANZSIC', 'SectorGroup', 'Technology', 'TechnologyGroup', 'Transport', 'TJ', 'Period', 'PeriodEndDate']]
+
     return data
 ```
 
@@ -936,11 +1433,11 @@ def data_eeud_filtered():
 
 ```{python}
 @render.download(
-    label="Download CSV",
-    filename=lambda: f"data-{date.today().isoformat()}-{np.random.randint(100, 999)}.csv"
+    label=download_button_label("Download Table"),
+    filename=lambda: csv_download_filename("EEUD Data")
 )
 async def download_data_filtered_data():
-    data = data_eeud_filtered()  # Ensure that this fetch is thread-safe or handled correctly within the async context
+    data = build_data_grid_download_data()
     csv_data = data.to_csv(index=False)
     await asyncio.sleep(0.25)  # Simulating some processing time
     yield csv_data
@@ -951,5 +1448,6 @@ async def download_data_filtered_data():
 ```{python} 
 @render.data_frame
 def dataview():
-    return render.DataGrid(data_eeud_filtered().drop(['SectorANZSIC', 'PeriodEndDate', 'Transport'], axis=1), height=MIN_PLOT_HEIGHT, width="100%", summary=False)
+    data = build_data_grid_download_data()
+    return render.DataGrid(data, width="100%", summary=False)
 ```

@@ -34,7 +34,7 @@ $regular: 400;
 $navbar-bg: $silver !default;
 $navbar-fg: $primary !default;
 
-$font-family-sans-serif: "National 2", serif !default;
+$font-family-sans-serif: "National 2", sans-serif !default;
 $def-padding: 0.375rem !default;
 $border-radius: 0 !default;
 
@@ -1135,7 +1135,7 @@ h5 {
     top: 50% !important;
     right: 100% !important;
     left: auto !important;
-    transform: translateY(-40%) !important;
+    transform: translateY(-36%) !important;
     margin-right: 0 !important;
     padding-right: $def-padding !important;
 }

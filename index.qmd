@@ -116,7 +116,7 @@ def color_dict_for(dimension):
     return fuel_group_dict 
 
 MIN_PLOT_HEIGHT = 720
-PLOTLY_FONT_FAMILY = "National 2"
+PLOTLY_FONT_FAMILY = "Arial, sans-serif"
 PLOTLY_FONT_SIZE = 14
 PLOTLY_AXIS_TITLE_SIZE = 14
 PLOTLY_LEGEND_TITLE_SIZE = 14
@@ -136,6 +136,9 @@ def set_plotly_download_filename(fig, title):
         "toImageButtonOptions": {
             **widget._config.get("toImageButtonOptions", {}),
             "filename": filename,
+            "format": "svg",
+            "width": 825,
+            "height": 900,
         },
     }
     return widget
@@ -463,8 +466,9 @@ def apply_common_plotly_layout(fig, height=MIN_PLOT_HEIGHT):
             title=dict(font=dict(size=PLOTLY_LEGEND_TITLE_SIZE, color=font_color))
         ),
         modebar_remove=[
-            "zoom", "pan", "select", "lasso",
-            "zoomin", "zoomout", "autoscale", "resetScale2d"
+            "zoom", "pan", "select", "lasso", "zoomIn", "zoomOut",
+            "autoScale", "resetScale", "resetViews", "resetSankeyGroup",
+            "resetScale2d", "resetCameraDefault3d", "resetViewMapbox",
         ],
         modebar_bgcolor="rgba(0,0,0,0)",
         modebar_color="rgba(0,0,0,255)",
@@ -1364,9 +1368,9 @@ def display_timeseries_chart():
         fig = apply_cartesian_axis_padding(
             fig,
             margin=dict(l=28, r=20, t=48, b=32),
-            x_tick_standoff=10,
-            y_tick_standoff=10,
-            y_title_standoff=14
+            x_tick_standoff=16,
+            y_tick_standoff=16,
+            y_title_standoff=14,
         )
         fig = apply_plotly_gridlines(fig, yaxis=True)
         filename = f"Energy Usage Time Series {category} {input.timeseries_display()} Area"

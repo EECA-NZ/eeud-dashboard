@@ -1,0 +1,159 @@
+Dimension,Label,Colour
+EndUseGroup,Unknown,#808080
+EndUse,Unknown,#C0C0C0
+EndUseGroup,Electronics and Lighting,#4977b5
+EndUseGroup,Heating/Cooling,#3a93ae
+EndUseGroup,Iron and Steel,#00a9ab
+EndUseGroup,Mobile Motive Power,#854c95
+EndUseGroup,Stationary Motive Power,#2fbb8b
+EndUseGroup,Transport,#854c95
+EndUse,"Motive Power, Mobile",#6c2872
+EndUse,Electronics and Other Electrical Uses,#3f427e
+EndUse,Lighting,#7ed0ff
+EndUse,Fans,#485d9a
+EndUse,Refiners,#6cb2e7
+EndUse,Irrigation,#5179b5
+EndUse,Compressed Air,#5d95cf
+EndUse,"High Temperature Heat (>300 C), Process Requirements",#79dbdb
+EndUse,"Intermediate Heat (100-300 C), Process Requirements",#204e74
+EndUse,"Low Temperature Heat (<100 C), Space Heating",#6accd3
+EndUse,"Low Temperature Heat (<100 C), Water Heating",#235b81
+EndUse,Refrigeration,#5cbeca
+EndUse,"Low Temperature Heat (<100 C), Process Requirements",#26698d
+EndUse,"Intermediate Heat (100-300 C), Cooking",#4fafc2
+EndUse,Space Cooling,#2b7798
+EndUse,"Low Temperature Heat (< 100 C), Dishwashers",#43a1b8
+EndUse,"Low Temperature Heat (<100 C), Clothes Washing",#3285a3
+EndUse,"Low Temperature Heat (<100 C), Clothes Drying",#3a93ae
+EndUse,"Motive Power, Stationary",#36dfa8
+EndUse,Pumping,#12593c
+EndUse,Iron and Steel Manufacturing,#4ddec9
+FuelGroup,Unknown,#808080
+Fuel,Unknown,#C0C0C0
+FuelGroup,Electricity,#3a93ae
+FuelGroup,Fossil Fuels,#854c95
+FuelGroup,Renewables,#2fbb8b
+Fuel,Diesel,#6c2872
+Fuel,Petrol,#d2b6ff
+Fuel,Natural Gas,#7d4089
+Fuel,Coal,#c09ee7
+Fuel,Av. Fuel/Kero,#8d57a0
+Fuel,LPG,#af86cf
+Fuel,Fuel Oil,#9e6eb8
+Fuel,Electricity,#79dbdb
+Fuel,Wood,#36dfa8
+Fuel,Geothermal,#12593c
+Fuel,Solar,#2cb081
+Fuel,Biogas,#20835d
+SectorGroup,Unknown,#808080
+Sector,Unknown,#45d5c4
+SectorGroup,"Agriculture, Forestry and Fishing",#2fbb8b
+SectorGroup,Commercial,#00a9ab
+SectorGroup,Industrial,#3a93ae
+SectorGroup,Residential,#4977b5
+SectorGroup,Transport,#854c95
+Sector,Non-Dairy Agriculture,#36dfa8
+Sector,Dairy Cattle Farming,#12593c
+Sector,Indoor Cropping,#30c290
+Sector,"Fishing, Hunting and Trapping",#1a724f
+Sector,Forestry and Logging,#2aa77a
+Sector,"Financing, Insurance, Real Estate and Business Services",#4ddec9
+Sector,Accommodation and Food Services,#005764
+Sector,Retail Trade - Food,#005f6b
+Sector,Health Care and Social Assistance,#3dccbf
+Sector,Wholesale and Retail Trade - Non Food,#006773
+Sector,"Arts, Recreational and Other Services",#35c3b9
+Sector,"Transport, Postal and Warehousing (Commercial - Non-Transport)",#006f7a
+Sector,Information Media and Telecommunications,#2ebbb4
+Sector,"Education and Training: Pre-School, Primary and Secondary",#017781
+Sector,Local Government Administration,#26b2ae
+Sector,Public Administration and Safety,#037f88
+Sector,Education and Training: Tertiary Education and Other Education,#20a9a8
+Sector,Defence,#07878f
+Sector,Wholesale Trade - Food,#19a1a2
+Sector,Data Centers,#0d9095
+Sector,"Building Cleaning, Pest Control and Other Support Services",#13989c
+Sector,Dairy Product Manufacturing,#79dbdb
+Sector,"Petroleum, Basic Chemical and Rubber Product Manufacturing",#204e74
+Sector,Primary Metal and Metal Product Manufacturing,#6ed1d5
+Sector,Wood Product Manufacturing,#22577d
+Sector,"Pulp, Paper and Converted Paper Product Manufacturing",#63c6cf
+Sector,Industrial - Unallocated,#246186
+Sector,Construction,#5abcc9
+Sector,"Food and Beverage Product Manufacturing (excluding Dairy, Meat, Seafood)",#276b8e
+Sector,Meat and Meat Product Manufacturing and Seafood,#51b1c3
+Sector,Mining,#2a7597
+Sector,Non-Metallic Mineral Product Manufacturing,#48a7bc
+Sector,"Fabricated Metal Product, Transport Equipment, Machinery and Equipment Manufacturing",#2f7f9f
+Sector,"Textile, Leather, Clothing and Footwear Manufacturing",#409db5
+Sector,Printing,#3a93ae
+Sector,Residential,#3f427e
+Sector,Road Transport,#6c2872
+Sector,Air Transport,#d2b6ff
+Sector,Sea Transport,#8d57a0
+Sector,Rail Transport,#af86cf
+TechnologyGroup,Unknown,#808080
+Technology,Unknown,#C0C0C0
+TechnologyGroup,Bus,#854c95
+TechnologyGroup,Electronics and Lights,#3881b6
+TechnologyGroup,Freight Rail,#854c95
+TechnologyGroup,Heat/Cooling Devices,#3a93ae
+TechnologyGroup,Heavy Truck,#854c95
+TechnologyGroup,Light Commercial Vehicle,#854c95
+TechnologyGroup,Light Passenger Vehicle,#854c95
+TechnologyGroup,Light Truck,#854c95
+TechnologyGroup,Medium Truck,#854c95
+TechnologyGroup,Mobile Motors,#854c95
+TechnologyGroup,Motorcycle,#854c95
+TechnologyGroup,Passenger Rail,#854c95
+TechnologyGroup,Plane,#854c95
+TechnologyGroup,Ship,#854c95
+TechnologyGroup,Stationary Motors,#2fbb8b
+TechnologyGroup,Transport,#854c95
+TechnologyGroup,Electronics and Lighting,#3881b6
+TechnologyGroup,Heating/Cooling,#3a93ae
+TechnologyGroup,Stationary Motive Power,#2fbb8b
+Technology,Internal Combustion Engine (Land Transport),#6c2872
+Technology,Internal Combustion Engine (Recreational Marine),#d2b6ff
+Technology,Internal Combustion Engine (Sea Transport),#9e6eb8
+Technology,Lights,#31477d
+Technology,IT and Entertainment,#6fd5fa
+Technology,Electronics,#35568c
+Technology,Fan Systems,#63c4ee
+Technology,Incandescent/Halogen,#39659b
+Technology,Refiners,#59b4e1
+Technology,Irrigation,#3d74aa
+Technology,Air Compressors,#50a4d4
+Technology,Fluorescent,#4384b8
+Technology,LED,#4994c6
+Technology,Boiler Systems,#79dbdb
+Technology,Electric Furnace,#204e74
+Technology,Hot Water Cylinder,#72d4d7
+Technology,Reformer,#21547a
+Technology,Refrigeration Systems,#6bced4
+Technology,Burner (Direct Heat),#225a7f
+Technology,Resistance Heater,#64c7d0
+Technology,Furnace/Kiln,#246085
+Technology,Heat Pump (for Heating),#5ec1cc
+Technology,Gas Water Heater,#25668b
+Technology,"Misc, Residential Only (Battery chargers, Pools, Pumps)",#58bac8
+Technology,"Cooking Appliances, Residential Only (Cooktops/Microwaves/Ovens/Uprights)",#276d90
+Technology,Heat Pump (for Cooling),#52b3c4
+Technology,Cooking Ovens,#2a7395
+Technology,"Burner, with Wetback",#4dadc0
+Technology,Industrial Ovens,#2c799a
+Technology,Dishwashers,#47a6bc
+Technology,Clothes Washers,#2f7f9f
+Technology,Cooking Elements,#43a0b7
+Technology,Clothes Dryer,#3286a4
+Technology,"Coal Heaters, Residential Only",#3e99b3
+Technology,Direct Heat,#368ca9
+Technology,HVAC,#3a93ae
+Technology,Electric Motor,#36dfa8
+Technology,"Pump Systems (for Fluids, etc.)",#12593c
+Technology,Stationary Engine,#26996f
+Technology,Turbine Engine,#6c2872
+Technology,Internal Combustion Engine,#6c2872
+Technology,Battery Electric Vehicle,#d2b6ff
+Technology,Conventional Hybrid Vehicle,#d2b6ff
+Technology,Plug-In Hybrid Vehicle,#8d57a0

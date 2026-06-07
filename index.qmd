@@ -50,7 +50,9 @@ for column in eeud.columns:
     if eeud[column].dtype == 'object':
         eeud[column] = eeud[column].str.strip()
 
-eeud_colours = pd.read_csv('./data/eeud-colour-palette.csv', header=0, dtype=str).squeeze("columns").set_index(['Label', 'Dimension'])
+
+
+eeud_colours = pd.read_csv('./data/eeud-colour-palette-2026.csv', header=0, dtype=str).squeeze("columns").set_index(['Label', 'Dimension'])
 eeud_colours = eeud_colours[~eeud_colours.index.duplicated()]
 
 fill_unknown_columns = ['EndUse', 'Fuel', 'Sector', 'Technology', 'EndUseGroup', 'FuelGroup', 'SectorGroup', 'TechnologyGroup']
@@ -801,16 +803,22 @@ def display_trend():
     category = title_case(input.highlight_category())
     group = category + "Group"
     eeud_subset = eeud[~pd.isna(eeud[category])].copy()
-    to_replace = ['Bus', 'Freight Rail', 'Heavy Truck', 'Light Commercial Vehicle', 'Light Passenger Vehicle', 'Medium Truck', 'Motorcycle', 'Passenger Rail', 'Plane', 'Ship', 'Very Heavy Truck']
+    to_replace = ['Bus', 'Freight Rail', 'Heavy Truck', 'Light Commercial Vehicle', 'Light Passenger Vehicle', 'Medium Truck', 'Motorcycle', 'Passenger Rail', 'Plane', 'Ship', 'Very Heavy Truck', 'Mobile Motors']
     eeud_subset['TechnologyGroup'] = eeud_subset['TechnologyGroup'].apply(lambda g: 'Transport' if g in to_replace else g)
 
     grouped = eeud_subset.groupby([group, 'Period']).sum(numeric_only=True).reset_index()
     total_tj_by_period = grouped.groupby('Period')['TJ'].sum().reset_index(name='TotalTJ')
     merged = pd.merge(grouped, total_tj_by_period, on='Period')
     merged['TJ_Proportion'] = (merged['TJ'] / merged['TotalTJ']) * 100
+    
+    latest_period = merged['Period'].max()
+    stack_order = (merged[merged['Period'] == latest_period]
+        .sort_values('TJ', ascending=False)[group].tolist())
+
     fig = px.area(merged,
         y='TJ', x='Period', color=group, color_discrete_map=color_dict_for(group),
-        markers=True, hover_data={group: True, 'TJ_Proportion': True}).update_xaxes(dtick=1)
+        category_orders={group: stack_order}, markers=True, 
+        hover_data={group: True, 'TJ_Proportion': True}).update_xaxes(dtick=1)
     fig.update_traces(hovertemplate="%{customdata[0]} / %{x}<br>%{y:,.0f} TJ (%{customdata[1]:.1f}%)<extra></extra>")
     fig.update_layout(yaxis=dict(title=f"Total Energy Usage (TJ)"))
     fig.update_layout(legend=dict(
@@ -844,7 +852,7 @@ def display_treemap():
     category = title_case(input.highlight_category())
     group = category + "Group"
     eeud_subset = eeud[(~pd.isna(eeud[category]))].copy()
-    to_replace = ['Bus', 'Freight Rail', 'Heavy Truck', 'Light Commercial Vehicle', 'Light Passenger Vehicle', 'Medium Truck', 'Motorcycle', 'Passenger Rail', 'Plane', 'Ship', 'Very Heavy Truck']
+    to_replace = ['Bus', 'Freight Rail', 'Heavy Truck', 'Light Commercial Vehicle', 'Light Passenger Vehicle', 'Medium Truck', 'Motorcycle', 'Passenger Rail', 'Plane', 'Ship', 'Very Heavy Truck', 'Mobile Motors']
     eeud_subset['TechnologyGroup'] = eeud_subset['TechnologyGroup'].apply(lambda g: 'Transport' if g in to_replace else g)
     data_last_year = eeud_subset[eeud_subset['Period'].isin([eeud_subset['Period'].max()])]
     eeud_aggregated = data_last_year.groupby([group, category], as_index=False).agg({'TJ': 'sum'})
@@ -1111,8 +1119,9 @@ def display_explore_chart():
             color_discrete_map=color_dict_for(right_node) if right_node != 'Proxy' else color_dict_for(left_node),
             hover_data={right_node: True}
         )
+        fig.update_yaxes(autorange="reversed")
         fig.update_traces(hovertemplate="%{y} / %{customdata[0]}<br>%{x:,.0f} TJ<extra></extra>")
-        fig.update_traces(marker=dict(line=dict(color='rgba(0,0,0,0)', width=0)))
+        fig.update_traces(marker=dict(line=dict(color='rgba(255,255,255,0.25)', width=1)))
         fig.update_layout(legend=dict(
             orientation="h",
             yanchor="bottom", y=1.02,
@@ -1331,9 +1340,15 @@ def display_timeseries_chart():
         return fig
 
     elif timeseries_chart_type.get() == 'Area':
+        latest_period = timeseries_df['Period'].max()
+        latest_order = (timeseries_df[timeseries_df['Period'] == latest_period]
+            .sort_values('TJ', ascending=False)[category]
+            .tolist()
+            )
         fig = px.area(timeseries_df,
             y='TJ', x='Period', color=category,
             color_discrete_map=color_dict_for(category),
+            category_orders={category: latest_order},
             markers=True, hover_data={category: True}).update_xaxes(dtick=1)
         fig.update_layout(yaxis=dict(title=f"{input.timeseries_display()} Energy Usage ({'TJ' if total else '%'})"))
         fig.update_layout(legend=dict(

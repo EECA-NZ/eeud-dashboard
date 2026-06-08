@@ -11,4 +11,21 @@
     stroke="currentColor"
     stroke-width="1"
   />
+  <circle
+    cx="10" 
+    cy="6" 
+    r="1.5" 
+    fill="white"
+    stroke="currentColor"
+    stroke-width="1"
+  />
+  <circle
+    cx="14" 
+    cy="12" 
+    r="1.5" 
+    fill="white"
+    stroke="currentColor"
+    stroke-width="1"
+  />
+
 </svg>

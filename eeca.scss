@@ -653,8 +653,9 @@ $slider-selected-color: $sky-blue;
     align-items: center !important;
     background-color: $silver !important;
     border: 0 !important;
+    border-left: 4px solid transparent !important;
     border-radius: 0 !important;
-    box-shadow: inset 0 -1px 0 $secondary !important;
+    box-shadow: inset 0 -1px 0 0 $secondary !important;
     color: $black !important;
     display: inline-flex !important;
     font-size: 16px !important;
@@ -663,14 +664,15 @@ $slider-selected-color: $sky-blue;
     margin-bottom: 17px !important;
     padding: 0.625rem 0.875rem !important;
     text-decoration: none !important;
-    transition: background-color 0s, box-shadow 0s !important;
+    transition: background-color 0s ease, border-color 0s ease, box-shadow 0s ease, color 0s ease !important;
     width: 100% !important;
 
     &:hover,
     &:focus,
     &:focus-visible {
         background-color: $secondary !important;
-        box-shadow: inset 0 -1px 0 $secondary !important;
+        border-left-color: $secondary !important;
+        box-shadow: none !important;
         color: $sea-blue !important;
         outline: 0 !important;
     }
@@ -690,7 +692,7 @@ $slider-selected-color: $sky-blue;
 }
 
 .chart-type-button-label {
-    align-items: center !important;
+    align-items: flex-end !important;
     display: inline-flex !important;
     gap: 0.35rem !important;
 }
@@ -699,30 +701,57 @@ $slider-selected-color: $sky-blue;
     display: inline-block !important;
     font-size: 16px !important;
     font-weight: $regular !important;    
-    line-height: 1.1 !important;
+    line-height: 1 !important;
 }
 
 .chart-type-button-icon {
-    display: inline-block !important;
+    align-self: flex-end !important;
+    color: inherit !important;
+    display: inline-flex !important;
     flex: 0 0 auto !important;
-    font-size: 1em !important;
+    height: 1.3rem !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+    margin-bottom: -0.02rem !important;
+    text-align: center !important;
+    transform: translateY(calc(($def-padding / 2) + 2.5px)) !important;
+    width: 1.3rem !important;
+}
+
+.chart-type-button-icon svg {
+    display: block !important;
+    flex: 0 0 auto !important;
+    height: 100% !important;
     line-height: 1 !important;
     opacity: 0.9 !important;
-    text-align: center !important;
-    transform: translateY(0.07em) !important;
-    width: 1rem !important;
+    overflow: visible !important;
+    width: 100% !important;
 }
 
 #explore_bar,
 #explore_sankey,
 #timeseries_area,
 #timeseries_line {
+    --chart-type-button-underline-left-inset: 4px;
+    --chart-type-button-underline-offset: 0.2rem;
     background-color: transparent !important;
     border: 0 !important;
     box-shadow: none !important;
     color: $black !important;
     padding: $def-padding 1px 1px !important;
+    position: relative !important;
     transition: box-shadow 0s, color 0s !important;
+
+    &::after {
+        background-color: transparent !important;
+        bottom: var(--chart-type-button-underline-offset) !important;
+        content: "" !important;
+        height: 1px !important;
+        left: var(--chart-type-button-underline-left-inset) !important;
+        pointer-events: none !important;
+        position: absolute !important;
+        right: 0 !important;
+    }
 
     &:hover,
     &:focus,
@@ -734,8 +763,17 @@ $slider-selected-color: $sky-blue;
     }
 
     &.btn-primary {
-        box-shadow: inset 0 -1px 0 $black !important;
         cursor: default !important;
+
+        &::after {
+            background-color: $black !important;
+        }
+
+        font-weight: $medium !important;
+    }
+
+    &.btn-secondary {
+        color: $black !important;
     }
 
     &.btn-secondary:hover .chart-type-button-text,
@@ -753,7 +791,9 @@ $slider-selected-color: $sky-blue;
     &.btn-secondary:hover,
     &.btn-secondary:focus,
     &.btn-secondary:focus-visible {
-        box-shadow: inset 0 -1px 0 $sea-blue !important;
+        &::after {
+            background-color: $sea-blue !important;
+        }
     }
 }
 

@@ -450,6 +450,32 @@ def apply_cartesian_axis_padding(
 
     return fig
 
+def apply_numeric_xaxis_range_padding(fig, values, padding=0.2):
+    numeric_values = pd.to_numeric(pd.Series(values).dropna(), errors="coerce").dropna()
+
+    if numeric_values.empty:
+        return fig
+
+    min_x = numeric_values.min()
+    max_x = numeric_values.max()
+
+    fig.update_xaxes(range=[min_x - padding, max_x + padding])
+    return fig
+
+def apply_numeric_yaxis_range_padding(fig, values, padding_fraction=0.02):
+    numeric_values = pd.to_numeric(pd.Series(values).dropna(), errors="coerce").dropna()
+
+    if numeric_values.empty:
+        return fig
+
+    min_y = numeric_values.min()
+    max_y = numeric_values.max()
+    span = max_y - min_y
+    padding = span * padding_fraction if span > 0 else max(abs(max_y) * padding_fraction, 1)
+
+    fig.update_yaxes(range=[min_y - padding, max_y + padding])
+    return fig
+
 def apply_common_plotly_layout(fig, height=MIN_PLOT_HEIGHT):
     paper_bgcolor = fig.layout.paper_bgcolor or "rgba(255,255,255,255)"
     plot_bgcolor = fig.layout.plot_bgcolor or paper_bgcolor
@@ -1347,6 +1373,8 @@ def display_timeseries_chart():
             y_tick_standoff=10,
             y_title_standoff=14
         )
+        fig = apply_numeric_xaxis_range_padding(fig, timeseries_df['Period'])
+        fig = apply_numeric_yaxis_range_padding(fig, timeseries_df['TJ'])
         fig = apply_plotly_gridlines(fig, yaxis=True)
         filename = f"Energy Usage Time Series {category} {input.timeseries_display()} Line"
         fig = set_plotly_download_filename(fig, filename)

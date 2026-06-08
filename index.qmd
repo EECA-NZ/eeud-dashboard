@@ -28,6 +28,7 @@ server: shiny
 import asyncio
 import math
 import re
+from pathlib import Path
 
 # Additional modules, ensure these are added to the requirements file
 import numpy as np
@@ -79,13 +80,21 @@ sector_groups = {group: set(sub_df['Sector'].dropna()) for group, sub_df in eeud
 def title_case(s):
     return re.sub(r"(_|-)+", " ", s).title().replace(" ", "")
 
+WWW_IMAGES_DIR = Path("www/images")
+CHART_TYPE_SVGS = {
+    "bar": (WWW_IMAGES_DIR / "chart-bar-custom.svg").read_text(encoding="utf-8"),
+    "sankey": (WWW_IMAGES_DIR / "chart-sankey-custom.svg").read_text(encoding="utf-8"),
+    "area": (WWW_IMAGES_DIR / "chart-area-custom.svg").read_text(encoding="utf-8"),
+    "line": (WWW_IMAGES_DIR / "chart-line-custom.svg").read_text(encoding="utf-8"),
+}
+
 def download_button_label(text):
     icon = ui.tags.i(class_="fa-solid fa-download download-button-icon", **{"aria-hidden": "true"})
     return ui.span(icon, text, class_="download-button-label")
 
-def chart_type_button_label(icon_class, text):
+def chart_type_button_label(icon_name, text):
     return ui.span(
-        ui.tags.i(class_=f"fa-solid {icon_class} chart-type-button-icon", **{"aria-hidden": "true"}),
+        ui.span(ui.HTML(CHART_TYPE_SVGS[icon_name]), class_="chart-type-button-icon", **{"aria-hidden": "true"}),
         ui.span(text, class_="chart-type-button-text"),
         class_="chart-type-button-label"
     )
@@ -1043,7 +1052,7 @@ def render_bar_button():
     btn_class = 'btn-primary' if explore_chart_type.get() == 'Bar' else 'btn-secondary'
     return ui.input_action_button(
         "explore_bar",
-        chart_type_button_label("fa-chart-column", "Bar"),
+        chart_type_button_label("bar", "Bar"),
         class_=btn_class
     )
 @reactive.effect
@@ -1059,7 +1068,7 @@ def render_sankey_button():
     btn_class = 'btn-primary' if explore_chart_type.get() == 'Sankey' else 'btn-secondary'
     return ui.input_action_button(
         "explore_sankey",
-        chart_type_button_label("fa-chart-gantt", "Sankey"),
+        chart_type_button_label("sankey", "Sankey"),
         class_=btn_class
     )
 @reactive.effect
@@ -1249,7 +1258,7 @@ def render_timeseries_area_button():
     btn_class = 'btn-primary' if timeseries_chart_type.get() == 'Area' else 'btn-secondary'
     return ui.input_action_button(
         "timeseries_area",
-        chart_type_button_label("fa-chart-area", "Area"),
+        chart_type_button_label("area", "Area"),
         class_=btn_class
     )
 
@@ -1258,7 +1267,7 @@ def render_timeseries_line_button():
     btn_class = 'btn-primary' if timeseries_chart_type.get() == 'Line' else 'btn-secondary'
     return ui.input_action_button(
         "timeseries_line",
-        chart_type_button_label("fa-chart-line", "Line"),
+        chart_type_button_label("line", "Line"),
         class_=btn_class
     )
 

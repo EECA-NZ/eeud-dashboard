@@ -851,14 +851,14 @@ $slider-selected-color: $sky-blue;
     color: black !important;
     pointer-events: none !important;
     font-weight: bold !important;
-    transition: transform 0s;
+    transition: transform 0.3s ease;
 }
 
 /* Open */
 .selectize-control.single .selectize-input.dropdown-active:not(.no-arrow):after {
     font-weight: bold !important;
     transform: translateY(-33%) scaleY(-1) !important;
-    transition: transform 0s;
+    transition: transform 0.3s ease;
 }
 
 .selectize-control.single .selectize-input,

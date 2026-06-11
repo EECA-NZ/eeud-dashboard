@@ -1,19 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none">
   <path
-    d="M 6 7.33 H 10.33 L 13.67 4 H 18"
+    d="M 2 6.33 H 6.33 L 9.67 3 H 14"
     stroke="currentColor"
     stroke-width="1"
   />
   <path
-    d="M 6 10 H 18"
+    d="M 2 9 H 14"
     stroke="currentColor"
     stroke-width="1"
   />
   <path
-    d="M 6 10 H 10.33 L 13.67 13.33 H 18"
+    d="M 2 9 H 6.33 L 9.67 12.33 H 14"
     stroke="currentColor"
     stroke-width="1"
   />
 </svg>
-
-

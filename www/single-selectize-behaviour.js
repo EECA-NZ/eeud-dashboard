@@ -1,6 +1,76 @@
 (() => {
   const ENHANCED_ATTR = "data-single-selectize-enhanced";
+  const HOVER_FIX_ATTR = "data-selectize-hover-fix";
+  const KEYBOARD_ACTIVE_CLASS = "selectize-keyboard-active";
+  const NAVIGATION_KEYS = new Set([
+    "ArrowDown",
+    "ArrowUp",
+    "End",
+    "Home",
+    "PageDown",
+    "PageUp",
+  ]);
   const TYPEAHEAD_RESET_MS = 700;
+
+  const dropdownElement = (selectize) => (
+    selectize.$dropdown && selectize.$dropdown[0]
+  );
+
+  const enableKeyboardActiveState = (selectize) => {
+    const dropdown = dropdownElement(selectize);
+    if (dropdown) {
+      dropdown.classList.add(KEYBOARD_ACTIVE_CLASS);
+    }
+  };
+
+  const disableKeyboardActiveState = (selectize) => {
+    const dropdown = dropdownElement(selectize);
+    if (dropdown) {
+      dropdown.classList.remove(KEYBOARD_ACTIVE_CLASS);
+    }
+  };
+
+  const clearUnhoveredActiveOptions = (selectize) => {
+    const dropdown = dropdownElement(selectize);
+    if (!dropdown) {
+      return;
+    }
+
+    dropdown.querySelectorAll("[data-selectable].active, .option.active").forEach((option) => {
+      if (!option.matches(":hover")) {
+        option.classList.remove("active");
+      }
+    });
+  };
+
+  const keepActiveStateHoverBound = (selectize) => {
+    const dropdown = dropdownElement(selectize);
+    if (!dropdown || dropdown.hasAttribute(HOVER_FIX_ATTR)) {
+      return;
+    }
+
+    dropdown.setAttribute(HOVER_FIX_ATTR, "true");
+
+    dropdown.addEventListener("mouseleave", () => {
+      disableKeyboardActiveState(selectize);
+      clearUnhoveredActiveOptions(selectize);
+    });
+
+    dropdown.addEventListener("mousemove", (event) => {
+      disableKeyboardActiveState(selectize);
+
+      if (!event.target.closest("[data-selectable], .option")) {
+        clearUnhoveredActiveOptions(selectize);
+      }
+    });
+  };
+
+  const clearUnhoveredActiveOptionsSoon = (selectize) => {
+    window.requestAnimationFrame(() => {
+      clearUnhoveredActiveOptions(selectize);
+      window.requestAnimationFrame(() => clearUnhoveredActiveOptions(selectize));
+    });
+  };
 
   const enhanceSingleSelect = (select) => {
     if (!select || select.multiple || select.hasAttribute(ENHANCED_ATTR)) {
@@ -34,6 +104,7 @@
 
     control.style.cursor = "pointer";
     syncInputState();
+    keepActiveStateHoverBound(selectize);
 
     const isDropdownOpen = () => (
       selectize.isOpen ||
@@ -83,7 +154,7 @@
     );
 
     const activeOptionValue = () => {
-      const dropdown = selectize.$dropdown && selectize.$dropdown[0];
+      const dropdown = dropdownElement(selectize);
       const activeOption = dropdown && dropdown.querySelector(
         "[data-selectable].active, [data-value].active"
       );
@@ -141,6 +212,8 @@
         } else {
           selectize.focus();
           selectize.open();
+          disableKeyboardActiveState(selectize);
+          clearUnhoveredActiveOptionsSoon(selectize);
         }
 
         window.requestAnimationFrame(syncInputState);
@@ -159,12 +232,18 @@
         return;
       }
 
+      if (NAVIGATION_KEYS.has(event.key)) {
+        enableKeyboardActiveState(selectize);
+        return;
+      }
+
       if (event.key.length !== 1) {
         return;
       }
 
       event.preventDefault();
       event.stopImmediatePropagation();
+      enableKeyboardActiveState(selectize);
       selectTypeaheadMatch(event.key.toLowerCase());
     }, true);
 

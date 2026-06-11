@@ -1,6 +1,6 @@
 Dimension,Label,Colour
-EndUseGroup,Unknown,#808080
-EndUse,Unknown,#C0C0C0
+EndUseGroup,Unknown,#000000
+EndUse,Unknown,#000000
 EndUseGroup,Electronics and Lighting,#4977b5
 EndUseGroup,Heating/Cooling,#3a93ae
 EndUseGroup,Iron and Steel,#00a9ab
@@ -28,8 +28,8 @@ EndUse,"Low Temperature Heat (<100 C), Clothes Drying",#3a93ae
 EndUse,"Motive Power, Stationary",#36dfa8
 EndUse,Pumping,#12593c
 EndUse,Iron and Steel Manufacturing,#4ddec9
-FuelGroup,Unknown,#808080
-Fuel,Unknown,#C0C0C0
+FuelGroup,Unknown,#000000
+Fuel,Unknown,#000000
 FuelGroup,Electricity,#3a93ae
 FuelGroup,Fossil Fuels,#854c95
 FuelGroup,Renewables,#2fbb8b
@@ -45,7 +45,7 @@ Fuel,Wood,#36dfa8
 Fuel,Geothermal,#12593c
 Fuel,Solar,#2cb081
 Fuel,Biogas,#20835d
-SectorGroup,Unknown,#808080
+SectorGroup,Unknown,#000000
 Sector,Unknown,#45d5c4
 SectorGroup,"Agriculture, Forestry and Fishing",#2fbb8b
 SectorGroup,Commercial,#00a9ab
@@ -92,8 +92,8 @@ Sector,Road Transport,#6c2872
 Sector,Air Transport,#d2b6ff
 Sector,Sea Transport,#8d57a0
 Sector,Rail Transport,#af86cf
-TechnologyGroup,Unknown,#808080
-Technology,Unknown,#C0C0C0
+TechnologyGroup,Unknown,#000000
+Technology,Unknown,#000000
 TechnologyGroup,Bus,#854c95
 TechnologyGroup,Electronics and Lights,#3881b6
 TechnologyGroup,Freight Rail,#854c95

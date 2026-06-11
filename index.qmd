@@ -15,11 +15,17 @@ format:
         - text: |
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
         - text: |
+            <script src="www/embedded-dashboard-behaviour.js"></script>
+        - text: |
             <script async src="https://cdn.jsdelivr.net/npm/@iframe-resizer/child@latest" type="text/javascript"></script>
         - text: |
             <script src="www/slider-label-bounds.js"></script>
         - text: |
             <script src="www/single-selectize-behaviour.js"></script>
+        - text: |
+            <script src="www/multi-selectize-behaviour.js"></script>
+        - text: |
+            <script src="www/selectize-dropdown-sizing.js"></script>
 server: shiny
 ---
 
@@ -57,6 +63,21 @@ eeud_colours = pd.read_csv('./data/eeud-colour-palette-2026.csv', header=0, dtyp
 eeud_colours = eeud_colours[~eeud_colours.index.duplicated()]
 
 fill_unknown_columns = ['EndUse', 'Fuel', 'Sector', 'Technology', 'EndUseGroup', 'FuelGroup', 'SectorGroup', 'TechnologyGroup']
+TRANSPORT_TECHNOLOGY_GROUPS = [
+    'Bus',
+    'Freight Rail',
+    'Heavy Truck',
+    'Light Commercial Vehicle',
+    'Light Passenger Vehicle',
+    'Light Truck',
+    'Medium Truck',
+    'Mobile Motors',
+    'Motorcycle',
+    'Passenger Rail',
+    'Plane',
+    'Ship',
+    'Very Heavy Truck',
+]
 
 for column in fill_unknown_columns:
     if column in eeud.columns:
@@ -72,6 +93,65 @@ technologies_list = list(eeud['Technology'].dropna().sort_values().unique())
 years_list = list(eeud['Period'].dropna().sort_values(ascending=False).unique())
 end_uses_list = list(eeud['EndUse'].dropna().sort_values().unique())
 sector_groups = {group: set(sub_df['Sector'].dropna()) for group, sub_df in eeud.groupby('SectorGroup')}
+
+def grouped_selectize_choices(data, group_column, value_column):
+    values_by_group = (
+        data[[group_column, value_column]]
+        .dropna()
+        .drop_duplicates()
+        .sort_values([group_column, value_column])
+    )
+    values_by_group = values_by_group[
+        (values_by_group[group_column] != 'Unknown') &
+        (values_by_group[value_column] != 'Unknown')
+    ]
+
+    return {
+        str(group): {str(value): str(value) for value in group_data[value_column]}
+        for group, group_data in values_by_group.groupby(group_column, sort=False)
+    }
+
+def technology_selectize_choices(data):
+    technology_choices = data.copy()
+    technology_choices['TechnologyGroup'] = technology_choices['TechnologyGroup'].apply(
+        lambda group: 'Transport' if group in TRANSPORT_TECHNOLOGY_GROUPS else group
+    )
+    technology_choices = technology_choices[
+        (technology_choices['TechnologyGroup'] != 'Unknown') &
+        (technology_choices['Technology'] != 'Unknown')
+    ]
+
+    if 'TJ' in technology_choices.columns:
+        technology_group_weights = (
+            technology_choices
+            .groupby(['Technology', 'TechnologyGroup'], as_index=False)['TJ']
+            .sum()
+            .rename(columns={'TJ': 'GroupWeight'})
+        )
+    else:
+        technology_group_weights = (
+            technology_choices
+            .groupby(['Technology', 'TechnologyGroup'], as_index=False)
+            .size()
+            .rename(columns={'size': 'GroupWeight'})
+        )
+
+    majority_technology_groups = (
+        technology_group_weights
+        .sort_values(
+            ['Technology', 'GroupWeight', 'TechnologyGroup'],
+            ascending=[True, False, True]
+        )
+        .drop_duplicates('Technology', keep='first')
+        [['TechnologyGroup', 'Technology']]
+    )
+
+    return grouped_selectize_choices(majority_technology_groups, 'TechnologyGroup', 'Technology')
+
+end_uses_selectize_choices = grouped_selectize_choices(eeud, 'EndUseGroup', 'EndUse')
+fuels_selectize_choices = grouped_selectize_choices(eeud, 'FuelGroup', 'Fuel')
+sectors_selectize_choices = grouped_selectize_choices(eeud, 'SectorGroup', 'Sector')
+technologies_selectize_choices = technology_selectize_choices(eeud)
 
 ```
 
@@ -842,8 +922,7 @@ def display_trend():
     category = title_case(input.highlight_category())
     group = category + "Group"
     eeud_subset = eeud[~pd.isna(eeud[category])].copy()
-    to_replace = ['Bus', 'Freight Rail', 'Heavy Truck', 'Light Commercial Vehicle', 'Light Passenger Vehicle', 'Medium Truck', 'Motorcycle', 'Passenger Rail', 'Plane', 'Ship', 'Very Heavy Truck', 'Mobile Motors']
-    eeud_subset['TechnologyGroup'] = eeud_subset['TechnologyGroup'].apply(lambda g: 'Transport' if g in to_replace else g)
+    eeud_subset['TechnologyGroup'] = eeud_subset['TechnologyGroup'].apply(lambda g: 'Transport' if g in TRANSPORT_TECHNOLOGY_GROUPS else g)
 
     grouped = eeud_subset.groupby([group, 'Period']).sum(numeric_only=True).reset_index()
     total_tj_by_period = grouped.groupby('Period')['TJ'].sum().reset_index(name='TotalTJ')
@@ -891,8 +970,7 @@ def display_treemap():
     category = title_case(input.highlight_category())
     group = category + "Group"
     eeud_subset = eeud[(~pd.isna(eeud[category]))].copy()
-    to_replace = ['Bus', 'Freight Rail', 'Heavy Truck', 'Light Commercial Vehicle', 'Light Passenger Vehicle', 'Medium Truck', 'Motorcycle', 'Passenger Rail', 'Plane', 'Ship', 'Very Heavy Truck', 'Mobile Motors']
-    eeud_subset['TechnologyGroup'] = eeud_subset['TechnologyGroup'].apply(lambda g: 'Transport' if g in to_replace else g)
+    eeud_subset['TechnologyGroup'] = eeud_subset['TechnologyGroup'].apply(lambda g: 'Transport' if g in TRANSPORT_TECHNOLOGY_GROUPS else g)
     data_last_year = eeud_subset[eeud_subset['Period'].isin([eeud_subset['Period'].max()])]
     eeud_aggregated = data_last_year.groupby([group, category], as_index=False).agg({'TJ': 'sum'})
 
@@ -996,28 +1074,28 @@ ui.input_selectize(
 sectors_dict = {'Residential': ['All Residential', 'Residential', 'Residential Unallocated'],
     'Industrial': ['All Industrial', 'Construction', 'Dairy', 'Manufacturing']}
 
-ui.input_selectize('explore_end_use', "End Use", end_uses_list, multiple=True,
+ui.input_selectize('explore_end_use', "End Use", end_uses_selectize_choices, multiple=True,
     options={
         'placeholder': "All End Uses",
         'plugins': ['clear_button']
     }
 )
 
-ui.input_selectize('explore_fuels', "Fuel Type", fuels_list, multiple=True, 
+ui.input_selectize('explore_fuels', "Fuel Type", fuels_selectize_choices, multiple=True,
     options={
         'placeholder': "All Fuel Types",
         'plugins': ['clear_button']
     }
 )
 
-ui.input_selectize('explore_sectors', "Sector", sectors_list, multiple=True,
+ui.input_selectize('explore_sectors', "Sector", sectors_selectize_choices, multiple=True,
     options={
         'placeholder': "All Sectors",
         'plugins': ['clear_button']
     }
 )
 
-ui.input_selectize('explore_technologies', "Technology", technologies_list, multiple=True,
+ui.input_selectize('explore_technologies', "Technology", technologies_selectize_choices, multiple=True,
     options={
         'placeholder': "All Technologies",
         'plugins': ['clear_button']
@@ -1209,28 +1287,28 @@ ui.input_selectize(
 
 ```{python}
 
-ui.input_selectize('timeseries_end_use', "End Use", end_uses_list, multiple=True,
+ui.input_selectize('timeseries_end_use', "End Use", end_uses_selectize_choices, multiple=True,
     options={
         'placeholder': "All End Uses",
         'plugins': ['clear_button']
     }
 )
 
-ui.input_selectize('timeseries_fuels', "Fuel Type", fuels_list, multiple=True, 
+ui.input_selectize('timeseries_fuels', "Fuel Type", fuels_selectize_choices, multiple=True,
     options={
         'placeholder': "All Fuel Types",
         'plugins': ['clear_button']
     }
 )
 
-ui.input_selectize('timeseries_sectors', "Sector", sectors_list, multiple=True,
+ui.input_selectize('timeseries_sectors', "Sector", sectors_selectize_choices, multiple=True,
     options={
         'placeholder': "All Sectors",
         'plugins': ['clear_button']
     }
 )
 
-ui.input_selectize('timeseries_technologies', "Technology", technologies_list, multiple=True,
+ui.input_selectize('timeseries_technologies', "Technology", technologies_selectize_choices, multiple=True,
     options={
         'placeholder': "All Technologies",
         'plugins': ['clear_button']
@@ -1425,28 +1503,28 @@ def display_timeseries_chart():
 <h5>Filter</h5>
 
 ```{python}
-ui.input_selectize('data_end_use', "End Use", end_uses_list, multiple=True,
+ui.input_selectize('data_end_use', "End Use", end_uses_selectize_choices, multiple=True,
     options={
         'placeholder': "All End Uses",
         'plugins': ['clear_button']
     }
 )
 
-ui.input_selectize('data_fuels', "Fuel Type", fuels_list, multiple=True, 
+ui.input_selectize('data_fuels', "Fuel Type", fuels_selectize_choices, multiple=True,
     options={
         'placeholder': "All Fuel Types",
         'plugins': ['clear_button']
     }
 )
 
-ui.input_selectize('data_sectors', "Sector", sectors_list, multiple=True,
+ui.input_selectize('data_sectors', "Sector", sectors_selectize_choices, multiple=True,
     options={
         'placeholder': "All Sectors",
         'plugins': ['clear_button']
     }
 )
 
-ui.input_selectize('data_technologies', "Technology", technologies_list, multiple=True,
+ui.input_selectize('data_technologies', "Technology", technologies_selectize_choices, multiple=True,
     options={
         'placeholder': "All Technologies",
         'plugins': ['clear_button']

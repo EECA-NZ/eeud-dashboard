@@ -11,6 +11,7 @@
   const ADD_PLACEHOLDER_CLASS = "multi-selectize-add-placeholder";
   const ADD_PLACEHOLDER_TEXT = "Click to add more filters";
   const GROUP_ITEM_CLASS = "multi-selectize-group-item";
+  const ITEM_LABEL_CLASS = "multi-selectize-item-label";
   const GROUP_ITEM_REMOVE_CLASS = "multi-selectize-group-item-remove";
   const HIDDEN_GROUP_ITEM_CLASS = "multi-selectize-hidden-group-item";
   const CLOSE_SUPPRESSION_MS = 350;
@@ -22,6 +23,12 @@
     "PageDown",
     "PageUp",
   ]);
+  const FILTER_DIMENSIONS = [
+    { suffix: "_end_use", dimension: "EndUse", groupDimension: "EndUseGroup" },
+    { suffix: "_fuels", dimension: "Fuel", groupDimension: "FuelGroup" },
+    { suffix: "_sectors", dimension: "Sector", groupDimension: "SectorGroup" },
+    { suffix: "_technologies", dimension: "Technology", groupDimension: "TechnologyGroup" },
+  ];
 
   const dropdownElement = (selectize) => (
     selectize.$dropdown && selectize.$dropdown[0]
@@ -175,6 +182,107 @@
     event.stopImmediatePropagation();
   };
 
+  const selectDimensionsFor = (selectize) => {
+    const select = selectize.$input && selectize.$input[0];
+    const selectId = select && select.id;
+
+    if (!selectId) {
+      return null;
+    }
+
+    return FILTER_DIMENSIONS.find((entry) => selectId.endsWith(entry.suffix)) || null;
+  };
+
+  const paletteColourFor = (label, dimension) => {
+    const palette = window.EEUD_SELECTIZE_COLOURS || {};
+    const dimensionPalette = palette[dimension] || {};
+    return dimensionPalette[String(label)] || null;
+  };
+
+  const relativeLuminance = (red, green, blue) => {
+    const toLinear = (channel) => {
+      const normalised = channel / 255;
+      return normalised <= 0.04045
+        ? normalised / 12.92
+        : ((normalised + 0.055) / 1.055) ** 2.4;
+    };
+
+    return (
+      0.2126 * toLinear(red) +
+      0.7152 * toLinear(green) +
+      0.0722 * toLinear(blue)
+    );
+  };
+
+  const textColourForBackground = (backgroundColour) => {
+    const match = String(backgroundColour || "").trim().match(/^#([0-9a-f]{6})$/i);
+
+    if (!match) {
+      return null;
+    }
+
+    const hex = match[1];
+    const red = parseInt(hex.slice(0, 2), 16);
+    const green = parseInt(hex.slice(2, 4), 16);
+    const blue = parseInt(hex.slice(4, 6), 16);
+
+    return relativeLuminance(red, green, blue) < 0.45 ? "#ffffff" : "#000000";
+  };
+
+  const setPriorityStyle = (element, property, value) => {
+    if (!element) {
+      return;
+    }
+
+    if (value) {
+      element.style.setProperty(property, value, "important");
+      return;
+    }
+
+    element.style.removeProperty(property);
+  };
+
+  const itemLabelForValue = (selectize, value) => {
+    const option = selectize.options && selectize.options[value];
+    return String((option && (option.label || option.text || option.value)) || value);
+  };
+
+  const selectedChipElements = (selectize) => {
+    const control = selectize.$control && selectize.$control[0];
+
+    if (!control) {
+      return [];
+    }
+
+    return Array.from(control.querySelectorAll(".item[data-value]"));
+  };
+
+  const applySelectedItemColours = (selectize) => {
+    const dimensions = selectDimensionsFor(selectize);
+
+    if (!dimensions) {
+      return;
+    }
+
+    selectedChipElements(selectize).forEach((item) => {
+      const groupValue = item.getAttribute("data-multi-selectize-group");
+      const label = groupValue || itemLabelForValue(selectize, item.getAttribute("data-value"));
+      const dimension = groupValue ? dimensions.groupDimension : dimensions.dimension;
+      const backgroundColour = paletteColourFor(label, dimension);
+      const textColour = textColourForBackground(backgroundColour);
+
+      setPriorityStyle(item, "background-color", backgroundColour);
+      setPriorityStyle(item, "color", textColour);
+    });
+  };
+
+  const applySelectedItemColoursSoon = (selectize) => {
+    window.requestAnimationFrame(() => {
+      applySelectedItemColours(selectize);
+      window.requestAnimationFrame(() => applySelectedItemColours(selectize));
+    });
+  };
+
   const optionGroupValues = (option, optgroupField) => {
     const optionGroup = option && option[optgroupField];
 
@@ -253,6 +361,46 @@
     updateCollapsedGroupItemsSoon(selectize);
   };
 
+  const wrapSelectedItemLabels = (selectize) => {
+    selectedItemElements(selectize).forEach((item) => {
+      const hasLabel = Array.from(item.children).some((child) => (
+        child.classList.contains(ITEM_LABEL_CLASS)
+      ));
+
+      if (hasLabel) {
+        return;
+      }
+
+      const labelNodes = Array.from(item.childNodes).filter((node) => {
+        if (node.nodeType === 3) {
+          return node.textContent.length > 0;
+        }
+
+        return node.nodeType === 1 && !node.classList.contains("remove");
+      });
+
+      if (!labelNodes.length) {
+        return;
+      }
+
+      const label = document.createElement("span");
+      label.className = ITEM_LABEL_CLASS;
+      item.insertBefore(label, labelNodes[0]);
+      labelNodes.forEach((node) => label.appendChild(node));
+    });
+  };
+
+  const wrapSelectedItemLabelsSoon = (selectize) => {
+    window.requestAnimationFrame(() => {
+      wrapSelectedItemLabels(selectize);
+      applySelectedItemColours(selectize);
+      window.requestAnimationFrame(() => {
+        wrapSelectedItemLabels(selectize);
+        applySelectedItemColours(selectize);
+      });
+    });
+  };
+
   const buildCollapsedGroupItem = (selectize, group) => {
     const item = document.createElement("div");
     const label = document.createElement("span");
@@ -261,6 +409,7 @@
     item.className = `${GROUP_ITEM_CLASS} item`;
     item.setAttribute("data-value", `__group__${group.groupValue}`);
     item.setAttribute("data-multi-selectize-group", group.groupValue);
+    label.className = ITEM_LABEL_CLASS;
     label.textContent = `All ${group.label}`;
 
     remove.className = `${GROUP_ITEM_REMOVE_CLASS} remove`;
@@ -318,7 +467,13 @@
   const updateCollapsedGroupItemsSoon = (selectize) => {
     window.requestAnimationFrame(() => {
       updateCollapsedGroupItems(selectize);
-      window.requestAnimationFrame(() => updateCollapsedGroupItems(selectize));
+      wrapSelectedItemLabels(selectize);
+      applySelectedItemColours(selectize);
+      window.requestAnimationFrame(() => {
+        updateCollapsedGroupItems(selectize);
+        wrapSelectedItemLabels(selectize);
+        applySelectedItemColours(selectize);
+      });
     });
   };
 
@@ -655,6 +810,7 @@
     keepActiveStateHoverBound(selectize);
     addSelectedPlaceholder(selectize);
     addCollapsedGroupItems(selectize);
+    wrapSelectedItemLabelsSoon(selectize);
     addControlToggleBehaviour(selectize);
     addHeaderClearButton(select, selectize);
 
@@ -706,6 +862,9 @@
       selectize.on("type", () => {
         window.requestAnimationFrame(() => decorateGroupHeaders(selectize));
       });
+      ["change", "item_add", "item_remove"].forEach((eventName) => {
+        selectize.on(eventName, () => wrapSelectedItemLabelsSoon(selectize));
+      });
     }
 
     return true;
@@ -714,6 +873,14 @@
   const enhanceAllMultiSelects = () => {
     document.querySelectorAll("select.shiny-input-select[multiple]").forEach((select) => {
       enhanceMultiSelect(select);
+    });
+  };
+
+  const applyAllSelectedItemColoursSoon = () => {
+    document.querySelectorAll("select.shiny-input-select[multiple]").forEach((select) => {
+      if (select.selectize) {
+        applySelectedItemColoursSoon(select.selectize);
+      }
     });
   };
 
@@ -736,5 +903,9 @@
   document.addEventListener("shiny:connected", () => {
     enhanceAllMultiSelects();
     startEnhancementRetries();
+  });
+
+  document.addEventListener("eeud-selectize-colours-ready", () => {
+    applyAllSelectedItemColoursSoon();
   });
 })();

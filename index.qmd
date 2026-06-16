@@ -3,6 +3,7 @@ title: "Energy End Use Database"
 #logo: "https://eecagovtnz.sharepoint.com/SiteAssets/__rectSitelogo__Only%20EECA%20white.png"
 resources:
   - www/
+  - data/eeud-colour-palette-2026.csv
 format: 
   dashboard:
     theme: "eeca.scss"
@@ -22,6 +23,8 @@ format:
             <script src="www/slider-label-bounds.js?v=20260617-1"></script>
         - text: |
             <script src="www/single-selectize-behaviour.js"></script>
+        - text: |
+            <script src="www/selectize-colours.js"></script>
         - text: |
             <script src="www/multi-selectize-behaviour.js"></script>
         - text: |
@@ -152,7 +155,6 @@ end_uses_selectize_choices = grouped_selectize_choices(eeud, 'EndUseGroup', 'End
 fuels_selectize_choices = grouped_selectize_choices(eeud, 'FuelGroup', 'Fuel')
 sectors_selectize_choices = grouped_selectize_choices(eeud, 'SectorGroup', 'Sector')
 technologies_selectize_choices = technology_selectize_choices(eeud)
-
 ```
 
 ```{python}

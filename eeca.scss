@@ -152,21 +152,51 @@ label {
 }
 
 .bslib-sidebar-layout {
+    box-sizing: border-box;
+    isolation: isolate;
     max-height: 100%;
+    min-width: 0 !important;
+    position: relative;
+    width: 100%;
 
     > .main,
     .sidebar-content {
+        box-sizing: border-box;
         max-height: 100%;
+        max-width: 100%;
+        min-width: 0 !important;
         overflow: hidden;
+    }
+
+    > .main {
+        position: relative;
+        width: 100%;
+        z-index: 1;
+    }
+
+    .sidebar-content,
+    .sidebar-content > .bslib-grid,
+    .sidebar-content .bslib-grid > .html-fill-item,
+    .sidebar-content .card,
+    .sidebar-content .card-body,
+    .sidebar-content .cell-output-display,
+    .sidebar-content .shiny-ipywidget-output,
+    .sidebar-content shiny-data-frame {
+        max-width: 100% !important;
+        min-width: 0 !important;
     }
 
     .sidebar {
         background-color: $silver !important;
         border: 0 !important;
+        flex: 0 0 auto !important;
         height: 100% !important;
         max-height: 100%;
+        min-width: 0 !important;
         overflow: hidden !important;
         padding: 0 !important;
+        position: relative;
+        z-index: 2;
 
         > .html-fill-container,
         > .html-fill-item {
@@ -178,17 +208,17 @@ label {
             overflow-x: hidden !important;
             overflow-y: auto !important;
             padding: calc($def-padding * 2) $def-padding calc($def-padding * 2) $def-padding !important;
-            scrollbar-color: rgba($black, 0.25) $white;
+            scrollbar-color: rgba($black, 0.25) $silver;
         }
 
         > .html-fill-container::-webkit-scrollbar,
         > .html-fill-item::-webkit-scrollbar {
-            background: $white !important;
+            background: $silver !important;
         }
 
         > .html-fill-container::-webkit-scrollbar-track,
         > .html-fill-item::-webkit-scrollbar-track {
-            background: $white !important;
+            background: $silver !important;
         }
 
         > .html-fill-container::-webkit-scrollbar-thumb,
@@ -626,7 +656,7 @@ $slider-selected-color: $sky-blue-light;
         border-color: $slider-selected-color !important;
         border-radius: 0 !important;
         color: $sea-blue !important;
-        font-size: 14px !important;
+        font-size: 15px !important;
         font-weight: $bold !important;
         padding: $slider-selected-padding !important;
         text-shadow: none !important;
@@ -931,19 +961,54 @@ $slider-selected-color: $sky-blue-light;
 
 .selectize-control.multi .selectize-input > .item,
 .selectize-control.multi .selectize-input > div {
+    align-items: stretch !important;
     background-color: $sky-blue-light !important;
     color: $sea-blue !important;
     cursor: default !important;
-    font-size: 14px !important;
+    display: inline-flex !important;
+    font-size: 15px !important;
     font-weight: $bold !important;
+    line-height: 1 !important;
+    padding: 0 !important;
+}
+
+.selectize-control.multi .selectize-input > .item > .multi-selectize-item-label,
+.selectize-control.multi .selectize-input > div > .multi-selectize-item-label {
+    align-items: center !important;
+    display: inline-flex !important;
+    line-height: 1 !important;
+    padding: 5px 0 5px 7px !important;
 }
 
 .selectize-control.multi .selectize-input > .item .remove,
 .selectize-control.multi .selectize-input > div .remove {
+    align-items: center !important;
+    align-self: stretch !important;
+    border-radius: 0 !important;
     cursor: pointer !important;
+    display: inline-flex !important;
     font-size: 16px !important;
     font-weight: $bold !important;
-    margin-left: 0 !important;
+    height: auto !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+    margin: 0 !important;
+    min-height: 0 !important;
+    padding-left: 0.45rem !important;
+    padding-right: 0.45rem !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    text-decoration: none !important;
+}
+
+.selectize-control.multi .selectize-input > .item .remove:hover,
+.selectize-control.multi .selectize-input > .item .remove:focus,
+.selectize-control.multi .selectize-input > .item .remove:focus-visible,
+.selectize-control.multi .selectize-input > div .remove:hover,
+.selectize-control.multi .selectize-input > div .remove:focus,
+.selectize-control.multi .selectize-input > div .remove:focus-visible {
+    background-color: rgba($white, 0.35) !important;
+    color: inherit !important;
 }
 
 .selectize-control.multi .selectize-input > .multi-selectize-hidden-group-item {
@@ -951,7 +1016,7 @@ $slider-selected-color: $sky-blue-light;
 }
 
 .selectize-control.multi .selectize-input > .multi-selectize-group-item > .multi-selectize-group-item-remove {
-    display: inline-block !important;
+    display: inline-flex !important;
 }
 
 .selectize-control.single .selectize-input > .item {
@@ -1146,6 +1211,11 @@ $slider-selected-color: $sky-blue-light;
 .selectize-dropdown .option {
     background: $white !important;
     color: black !important;
+}
+
+.selectize-dropdown.multi-selectize-group-actions .option {
+    font-size: 15px !important;
+    font-weight: $regular !important;
 }
 
 .selectize-dropdown .optgroup:before {

@@ -5,6 +5,15 @@
   const DROPDOWN_CLASS = "multi-selectize-group-actions";
   const HEADER_CLASS = "multi-selectize-group-header";
   const BUTTON_CLASS = "multi-selectize-add-group";
+  const CLEAR_CONTAINER_CLASS = "multi-selectize-clear-container";
+  const CLEAR_BUTTON_CLASS = "multi-selectize-clear-button";
+  const CLEAR_ACTIVE_CLASS = "has-multi-selectize-value";
+  const ADD_PLACEHOLDER_CLASS = "multi-selectize-add-placeholder";
+  const ADD_PLACEHOLDER_TEXT = "Click to add more filters";
+  const GROUP_ITEM_CLASS = "multi-selectize-group-item";
+  const GROUP_ITEM_REMOVE_CLASS = "multi-selectize-group-item-remove";
+  const HIDDEN_GROUP_ITEM_CLASS = "multi-selectize-hidden-group-item";
+  const CLOSE_SUPPRESSION_MS = 350;
   const NAVIGATION_KEYS = new Set([
     "ArrowDown",
     "ArrowUp",
@@ -121,6 +130,9 @@
     if (selectize.$input && selectize.$input.trigger) {
       selectize.$input.trigger("change");
     }
+
+    updateAddMorePlaceholderSoon(selectize);
+    updateCollapsedGroupItemsSoon(selectize);
   };
 
   const addGroupOptions = (selectize, groupEl, groupLabel) => {
@@ -137,6 +149,301 @@
     });
 
     syncShinyInput(selectize);
+  };
+
+  const labelForSelect = (select, container) => {
+    if (!container) {
+      return null;
+    }
+
+    return Array.from(container.querySelectorAll("label")).find((label) => (
+      label.getAttribute("for") === select.id
+    )) || container.querySelector("label.control-label, label");
+  };
+
+  const hasSelectedItems = (selectize) => asArray(selectize.getValue()).length > 0;
+
+  const controlInputFor = (selectize) => (
+    (selectize.$control_input && selectize.$control_input[0]) ||
+    (selectize.$control && selectize.$control[0] && selectize.$control[0].querySelector("input"))
+  );
+
+  const inputHasSearchText = (input) => Boolean(input && input.value.length > 0);
+
+  const suppressKeyboardEvent = (event) => {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  };
+
+  const optionGroupValues = (option, optgroupField) => {
+    const optionGroup = option && option[optgroupField];
+
+    if (Array.isArray(optionGroup)) {
+      return optionGroup.map(String);
+    }
+
+    if (optionGroup === null || optionGroup === undefined || optionGroup === "") {
+      return [];
+    }
+
+    return [String(optionGroup)];
+  };
+
+  const groupLabelFor = (selectize, groupValue) => {
+    const optgroup = selectize.optgroups && selectize.optgroups[groupValue];
+    const label = optgroup && (optgroup.label || optgroup.text || optgroup.value);
+    return String(label || groupValue);
+  };
+
+  const selectedGroupSummaries = (selectize) => {
+    const optgroupField = selectize.settings.optgroupField || "optgroup";
+    const selectedValues = new Set(asArray(selectize.getValue()));
+    const groups = new Map();
+
+    Object.keys(selectize.options || {}).forEach((value) => {
+      const option = selectize.options[value];
+      optionGroupValues(option, optgroupField).forEach((groupValue) => {
+        if (!groups.has(groupValue)) {
+          groups.set(groupValue, {
+            label: groupLabelFor(selectize, groupValue),
+            values: [],
+          });
+        }
+
+        groups.get(groupValue).values.push(String(value));
+      });
+    });
+
+    return Array.from(groups.entries())
+      .map(([groupValue, group]) => ({
+        groupValue,
+        label: group.label,
+        values: group.values,
+      }))
+      .filter((group) => (
+        group.values.length > 1 &&
+        group.values.every((value) => selectedValues.has(String(value)))
+      ));
+  };
+
+  const selectedItemElements = (selectize) => {
+    const control = selectize.$control && selectize.$control[0];
+
+    if (!control) {
+      return [];
+    }
+
+    return Array.from(control.querySelectorAll("[data-value]")).filter((item) => (
+      !item.classList.contains(GROUP_ITEM_CLASS)
+    ));
+  };
+
+  const selectedItemElementForValue = (selectize, value) => (
+    selectedItemElements(selectize).find((item) => (
+      String(item.getAttribute("data-value")) === String(value)
+    ))
+  );
+
+  const removeCollapsedGroup = (selectize, values) => {
+    values.forEach((value) => {
+      selectize.removeItem(value, true);
+    });
+
+    syncShinyInput(selectize);
+    updateCollapsedGroupItemsSoon(selectize);
+  };
+
+  const buildCollapsedGroupItem = (selectize, group) => {
+    const item = document.createElement("div");
+    const label = document.createElement("span");
+    const remove = document.createElement("a");
+
+    item.className = `${GROUP_ITEM_CLASS} item`;
+    item.setAttribute("data-value", `__group__${group.groupValue}`);
+    item.setAttribute("data-multi-selectize-group", group.groupValue);
+    label.textContent = `All ${group.label}`;
+
+    remove.className = `${GROUP_ITEM_REMOVE_CLASS} remove`;
+    remove.href = "javascript:void(0)";
+    remove.tabIndex = -1;
+    remove.title = "Remove";
+    remove.setAttribute("aria-label", `Remove all ${group.label}`);
+    remove.textContent = "\u00d7";
+
+    ["mousedown", "mouseup", "click"].forEach((eventName) => {
+      remove.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (eventName === "click") {
+          removeCollapsedGroup(selectize, group.values);
+        }
+      });
+    });
+
+    item.appendChild(label);
+    item.appendChild(remove);
+    return item;
+  };
+
+  const updateCollapsedGroupItems = (selectize) => {
+    const control = selectize.$control && selectize.$control[0];
+
+    if (!control) {
+      return;
+    }
+
+    control.querySelectorAll(`.${GROUP_ITEM_CLASS}`).forEach((item) => item.remove());
+    control.querySelectorAll(`.${HIDDEN_GROUP_ITEM_CLASS}`).forEach((item) => {
+      item.classList.remove(HIDDEN_GROUP_ITEM_CLASS);
+    });
+
+    selectedGroupSummaries(selectize).forEach((group) => {
+      const itemElements = group.values
+        .map((value) => selectedItemElementForValue(selectize, value))
+        .filter(Boolean);
+
+      if (!itemElements.length) {
+        return;
+      }
+
+      const groupItem = buildCollapsedGroupItem(selectize, group);
+      itemElements[0].insertAdjacentElement("beforebegin", groupItem);
+      itemElements.forEach((item) => {
+        item.classList.add(HIDDEN_GROUP_ITEM_CLASS);
+      });
+    });
+  };
+
+  const updateCollapsedGroupItemsSoon = (selectize) => {
+    window.requestAnimationFrame(() => {
+      updateCollapsedGroupItems(selectize);
+      window.requestAnimationFrame(() => updateCollapsedGroupItems(selectize));
+    });
+  };
+
+  const updateAddMorePlaceholder = (selectize) => {
+    const control = selectize.$control && selectize.$control[0];
+    const input = controlInputFor(selectize);
+
+    if (!control || !input) {
+      return;
+    }
+
+    const hasValue = hasSelectedItems(selectize);
+    control.classList.toggle(ADD_PLACEHOLDER_CLASS, hasValue);
+
+    if (hasValue) {
+      input.setAttribute("placeholder", ADD_PLACEHOLDER_TEXT);
+      return;
+    }
+
+    const emptyPlaceholder = selectize.settings && selectize.settings.placeholder;
+    if (emptyPlaceholder) {
+      input.setAttribute("placeholder", emptyPlaceholder);
+    } else {
+      input.removeAttribute("placeholder");
+    }
+  };
+
+  const updateAddMorePlaceholderSoon = (selectize) => {
+    window.requestAnimationFrame(() => {
+      updateAddMorePlaceholder(selectize);
+      window.requestAnimationFrame(() => updateAddMorePlaceholder(selectize));
+    });
+  };
+
+  const addSelectedPlaceholder = (selectize) => {
+    updateAddMorePlaceholderSoon(selectize);
+
+    if (selectize.on) {
+      [
+        "change",
+        "clear",
+        "dropdown_open",
+        "item_add",
+        "item_remove",
+        "type",
+      ].forEach((eventName) => {
+        selectize.on(eventName, () => updateAddMorePlaceholderSoon(selectize));
+      });
+    }
+  };
+
+  const addCollapsedGroupItems = (selectize) => {
+    updateCollapsedGroupItemsSoon(selectize);
+
+    if (selectize.on) {
+      [
+        "change",
+        "clear",
+        "item_add",
+        "item_remove",
+      ].forEach((eventName) => {
+        selectize.on(eventName, () => updateCollapsedGroupItemsSoon(selectize));
+      });
+    }
+  };
+
+  const updateClearButton = (container, button, selectize) => {
+    const hasValue = hasSelectedItems(selectize);
+    container.classList.toggle(CLEAR_ACTIVE_CLASS, hasValue);
+    button.hidden = !hasValue;
+  };
+
+  const addHeaderClearButton = (select, selectize) => {
+    const container = select.closest(".shiny-input-container");
+    const label = labelForSelect(select, container);
+
+    if (!container || !label) {
+      return;
+    }
+
+    container.classList.add(CLEAR_CONTAINER_CLASS);
+
+    let button = Array.from(container.children).find((child) => (
+      child.classList && child.classList.contains(CLEAR_BUTTON_CLASS)
+    ));
+    if (!button) {
+      const labelText = label.textContent.trim() || "filter";
+      const clearText = document.createElement("span");
+      const icon = document.createElement("i");
+
+      button = document.createElement("button");
+      button.type = "button";
+      button.className = CLEAR_BUTTON_CLASS;
+      button.title = `Clear ${labelText}`;
+      button.setAttribute("aria-label", `Clear ${labelText}`);
+      clearText.className = "multi-selectize-clear-label";
+      clearText.textContent = "CLEAR";
+      icon.className = "fa-solid fa-xmark";
+      icon.setAttribute("aria-hidden", "true");
+      //button.appendChild(clearText);
+      button.appendChild(icon);
+
+      ["mousedown", "mouseup", "click"].forEach((eventName) => {
+        button.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+
+          if (eventName === "click") {
+            selectize.clear(true);
+            syncShinyInput(selectize);
+            updateClearButton(container, button, selectize);
+          }
+        });
+      });
+
+      label.insertAdjacentElement("afterend", button);
+    }
+
+    updateClearButton(container, button, selectize);
+
+    if (selectize.on) {
+      selectize.on("change", () => updateClearButton(container, button, selectize));
+      selectize.on("item_add", () => updateClearButton(container, button, selectize));
+      selectize.on("item_remove", () => updateClearButton(container, button, selectize));
+    }
   };
 
   const decorateGroupHeaders = (selectize) => {
@@ -157,11 +464,14 @@
       header.classList.add(HEADER_CLASS);
 
       const button = document.createElement("button");
+      const icon = document.createElement("i");
       button.type = "button";
       button.className = BUTTON_CLASS;
-      button.textContent = "+";
       button.title = `Add all ${groupLabel}`;
       button.setAttribute("aria-label", `Add all ${groupLabel}`);
+      icon.className = "fa-solid fa-plus";
+      icon.setAttribute("aria-hidden", "true");
+      button.appendChild(icon);
 
       ["mousedown", "mouseup", "click"].forEach((eventName) => {
         button.addEventListener(eventName, (event) => {
@@ -217,6 +527,118 @@
     observer.observe(dropdownContent, { childList: true, subtree: true });
   };
 
+  const isDropdownOpen = (selectize, control) => (
+    selectize.isOpen ||
+    control.classList.contains("dropdown-active") ||
+    Boolean(selectize.$dropdown && selectize.$dropdown.is(":visible"))
+  );
+
+  const setControlCursor = (selectize, control, cursor) => {
+    const input = controlInputFor(selectize);
+    control.style.cursor = cursor;
+
+    if (input) {
+      input.style.cursor = cursor;
+    }
+  };
+
+  const updateOpenCursor = (selectize, control) => {
+    setControlCursor(
+      selectize,
+      control,
+      isDropdownOpen(selectize, control) ? "pointer" : ""
+    );
+  };
+
+  const suppressControlEvent = (event) => {
+    if (event.target.closest(".selectize-dropdown")) {
+      return false;
+    }
+
+    if (event.target.closest(".remove, button, a, [role='button']")) {
+      return false;
+    }
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    return true;
+  };
+
+  const closeDropdownFromControl = (selectize, control) => {
+    selectize.close();
+    selectize.blur();
+
+    const input = controlInputFor(selectize);
+    if (input) {
+      input.blur();
+    }
+
+    updateOpenCursor(selectize, control);
+  };
+
+  const addControlToggleBehaviour = (selectize) => {
+    const control = selectize.$control && selectize.$control[0];
+    if (!control) {
+      return;
+    }
+
+    let pendingMouseRelease = false;
+    let suppressUntil = 0;
+    const shouldSuppressFollowUp = () => window.performance.now() < suppressUntil;
+
+    updateOpenCursor(selectize, control);
+
+    control.addEventListener(
+      "mousedown",
+      (event) => {
+        pendingMouseRelease = suppressControlEvent(event);
+      },
+      true
+    );
+
+    control.addEventListener(
+      "mouseup",
+      (event) => {
+        if (!pendingMouseRelease || !suppressControlEvent(event)) {
+          pendingMouseRelease = false;
+          return;
+        }
+
+        pendingMouseRelease = false;
+        suppressUntil = window.performance.now() + CLOSE_SUPPRESSION_MS;
+
+        if (isDropdownOpen(selectize, control)) {
+          closeDropdownFromControl(selectize, control);
+        } else {
+          selectize.focus();
+          selectize.open();
+          disableKeyboardActiveState(selectize);
+          clearUnhoveredActiveOptionsSoon(selectize);
+          updateOpenCursor(selectize, control);
+        }
+      },
+      true
+    );
+
+    ["click", "focusin"].forEach((eventName) => {
+      control.addEventListener(
+        eventName,
+        (event) => {
+          if (shouldSuppressFollowUp()) {
+            suppressControlEvent(event);
+          }
+        },
+        true
+      );
+    });
+
+    if (selectize.on) {
+      selectize.on("dropdown_open", () => updateOpenCursor(selectize, control));
+      selectize.on("dropdown_close", () => updateOpenCursor(selectize, control));
+      selectize.on("blur", () => updateOpenCursor(selectize, control));
+    }
+  };
+
   const enhanceMultiSelect = (select) => {
     if (!select || !select.multiple || select.hasAttribute(ENHANCED_ATTR)) {
       return false;
@@ -231,9 +653,36 @@
     decorateGroupHeaders(selectize);
     observeDropdown(selectize);
     keepActiveStateHoverBound(selectize);
+    addSelectedPlaceholder(selectize);
+    addCollapsedGroupItems(selectize);
+    addControlToggleBehaviour(selectize);
+    addHeaderClearButton(select, selectize);
 
     if (selectize.$control && selectize.$control[0]) {
       selectize.$control[0].addEventListener("keydown", (event) => {
+        const input = controlInputFor(selectize);
+        const isSelectAll = (
+          event.key.toLowerCase() === "a" &&
+          (event.ctrlKey || event.metaKey) &&
+          !event.altKey
+        );
+        const isRemovalKey = event.key === "Backspace" || event.key === "Delete";
+
+        if (isSelectAll) {
+          suppressKeyboardEvent(event);
+
+          if (inputHasSearchText(input) && input.select) {
+            input.select();
+          }
+
+          return;
+        }
+
+        if (isRemovalKey && !inputHasSearchText(input)) {
+          suppressKeyboardEvent(event);
+          return;
+        }
+
         if (
           NAVIGATION_KEYS.has(event.key) &&
           !event.ctrlKey &&

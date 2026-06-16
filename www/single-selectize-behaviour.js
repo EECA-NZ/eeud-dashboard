@@ -84,6 +84,7 @@
 
     const control = selectize.$control[0];
     select.setAttribute(ENHANCED_ATTR, "true");
+    let pendingMouseRelease = false;
     let suppressUntil = 0;
     let typeahead = "";
     let typeaheadTimer = null;
@@ -203,13 +204,25 @@
     control.addEventListener(
       "mousedown",
       (event) => {
-        if (!suppressEvent(event)) {
+        pendingMouseRelease = suppressEvent(event);
+      },
+      true
+    );
+
+    control.addEventListener(
+      "mouseup",
+      (event) => {
+        if (!pendingMouseRelease || !suppressEvent(event)) {
+          pendingMouseRelease = false;
           return;
         }
+
+        pendingMouseRelease = false;
 
         if (isDropdownOpen()) {
           closeDropdown();
         } else {
+          suppressUntil = window.performance.now() + 350;
           selectize.focus();
           selectize.open();
           disableKeyboardActiveState(selectize);
@@ -247,19 +260,11 @@
       selectTypeaheadMatch(event.key.toLowerCase());
     }, true);
 
-    ["mouseup", "click", "focusin"].forEach((eventName) => {
+    ["click", "focusin"].forEach((eventName) => {
       control.addEventListener(
         eventName,
         (event) => {
-          if (!shouldSuppressFollowUp()) {
-            if (eventName === "click") {
-              suppressEvent(event);
-            }
-            return;
-          }
-
-          if (suppressEvent(event)) {
-            selectize.close();
+          if (shouldSuppressFollowUp() && suppressEvent(event)) {
             window.requestAnimationFrame(syncInputState);
           }
         },

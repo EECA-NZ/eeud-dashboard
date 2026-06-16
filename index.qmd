@@ -19,7 +19,7 @@ format:
         - text: |
             <script async src="https://cdn.jsdelivr.net/npm/@iframe-resizer/child@latest" type="text/javascript"></script>
         - text: |
-            <script src="www/slider-label-bounds.js"></script>
+            <script src="www/slider-label-bounds.js?v=20260617-1"></script>
         - text: |
             <script src="www/single-selectize-behaviour.js"></script>
         - text: |
@@ -1050,7 +1050,7 @@ def display_treemap():
 ## Row
 
 ### Column {.sidebar}
-<h5>Display</h5>
+<div class="sidebar-section-title" role="heading" aria-level="5">Display</div>
 
 ```{python}
 ui.input_selectize(
@@ -1068,7 +1068,7 @@ ui.input_selectize(
 ```
 
 <br/>
-<h5>Filter</h5>
+<div class="sidebar-section-title" role="heading" aria-level="5">Filter</div>
 
 ```{python}
 sectors_dict = {'Residential': ['All Residential', 'Residential', 'Residential Unallocated'],
@@ -1076,29 +1076,25 @@ sectors_dict = {'Residential': ['All Residential', 'Residential', 'Residential U
 
 ui.input_selectize('explore_end_use', "End Use", end_uses_selectize_choices, multiple=True,
     options={
-        'placeholder': "All End Uses",
-        'plugins': ['clear_button']
+        'placeholder': "All End Uses"
     }
 )
 
 ui.input_selectize('explore_fuels', "Fuel Type", fuels_selectize_choices, multiple=True,
     options={
-        'placeholder': "All Fuel Types",
-        'plugins': ['clear_button']
+        'placeholder': "All Fuel Types"
     }
 )
 
 ui.input_selectize('explore_sectors', "Sector", sectors_selectize_choices, multiple=True,
     options={
-        'placeholder': "All Sectors",
-        'plugins': ['clear_button']
+        'placeholder': "All Sectors"
     }
 )
 
 ui.input_selectize('explore_technologies', "Technology", technologies_selectize_choices, multiple=True,
     options={
-        'placeholder': "All Technologies",
-        'plugins': ['clear_button']
+        'placeholder': "All Technologies"
     }
 ) 
 
@@ -1129,7 +1125,7 @@ def explore_eeud_filtered():
 ```
 
 <br/>
-<h5>Data View</h5>
+<div class="sidebar-section-title" role="heading" aria-level="5">Data View</div>
 
 ```{python}
 @render.download(
@@ -1152,6 +1148,13 @@ async def download_explore_filtered_data():
 # https://github.com/posit-dev/py-shiny/issues/973
 
 @render.ui
+def render_explore_title():
+    return ui.tags.div(
+        ui.tags.span(f"Energy Usage for {input.explore_period()}", style="display: inline"),
+        class_="card-title html-fill-item html-fill-container"
+    )
+
+@render.ui
 def render_bar_button():
     btn_class = 'btn-primary' if explore_chart_type.get() == 'Bar' else 'btn-secondary'
     return ui.input_action_button(
@@ -1159,6 +1162,7 @@ def render_bar_button():
         chart_type_button_label("bar", "Bar"),
         class_=btn_class
     )
+
 @reactive.effect
 def set_explore_bar_chart():
     input.explore_bar()
@@ -1175,6 +1179,7 @@ def render_sankey_button():
         chart_type_button_label("sankey", "Sankey"),
         class_=btn_class
     )
+
 @reactive.effect
 def set_explore_sankey_chart():
     input.explore_sankey()
@@ -1186,8 +1191,6 @@ def set_explore_sankey_chart():
 ```
 
 ```{python}
-#| title: Stationary Energy Usage
-
 # Initialize a reactive value
 explore_chart_type = reactive.value('Sankey')
 
@@ -1265,7 +1268,7 @@ def display_explore_chart():
 
 ### Column {.sidebar}
 
-<h5>Display</h5>
+<div class="sidebar-section-title" role="heading" aria-level="5">Display</div>
 
 ```{python}
 ui.input_selectize(
@@ -1283,35 +1286,31 @@ ui.input_selectize(
 ```
 
 <br/>
-<h5>Filter</h5>
+<div class="sidebar-section-title" role="heading" aria-level="5">Filter</div>
 
 ```{python}
 
 ui.input_selectize('timeseries_end_use', "End Use", end_uses_selectize_choices, multiple=True,
     options={
-        'placeholder': "All End Uses",
-        'plugins': ['clear_button']
+        'placeholder': "All End Uses"
     }
 )
 
 ui.input_selectize('timeseries_fuels', "Fuel Type", fuels_selectize_choices, multiple=True,
     options={
-        'placeholder': "All Fuel Types",
-        'plugins': ['clear_button']
+        'placeholder': "All Fuel Types"
     }
 )
 
 ui.input_selectize('timeseries_sectors', "Sector", sectors_selectize_choices, multiple=True,
     options={
-        'placeholder': "All Sectors",
-        'plugins': ['clear_button']
+        'placeholder': "All Sectors"
     }
 )
 
 ui.input_selectize('timeseries_technologies', "Technology", technologies_selectize_choices, multiple=True,
     options={
-        'placeholder': "All Technologies",
-        'plugins': ['clear_button']
+        'placeholder': "All Technologies"
     }
 )
 
@@ -1335,7 +1334,7 @@ def timeseries_eeud_filtered():
 ```
 
 <br/>
-<h5>Data View</h5>
+<div class="sidebar-section-title" role="heading" aria-level="5">Data View</div>
 
 ```{python}
 @render.download(
@@ -1500,34 +1499,30 @@ def display_timeseries_chart():
 
 ### Column {.sidebar}
 
-<h5>Filter</h5>
+<div class="sidebar-section-title" role="heading" aria-level="5">Filter</div>
 
 ```{python}
 ui.input_selectize('data_end_use', "End Use", end_uses_selectize_choices, multiple=True,
     options={
-        'placeholder': "All End Uses",
-        'plugins': ['clear_button']
+        'placeholder': "All End Uses"
     }
 )
 
 ui.input_selectize('data_fuels', "Fuel Type", fuels_selectize_choices, multiple=True,
     options={
-        'placeholder': "All Fuel Types",
-        'plugins': ['clear_button']
+        'placeholder': "All Fuel Types"
     }
 )
 
 ui.input_selectize('data_sectors', "Sector", sectors_selectize_choices, multiple=True,
     options={
-        'placeholder': "All Sectors",
-        'plugins': ['clear_button']
+        'placeholder': "All Sectors"
     }
 )
 
 ui.input_selectize('data_technologies', "Technology", technologies_selectize_choices, multiple=True,
     options={
-        'placeholder': "All Technologies",
-        'plugins': ['clear_button']
+        'placeholder': "All Technologies"
     }
 ) 
 
@@ -1559,7 +1554,7 @@ def data_eeud_filtered():
 ```
 
 <br/>
-<h5>Data View</h5>
+<div class="sidebar-section-title" role="heading" aria-level="5">Data View</div>
 
 ```{python}
 @render.download(

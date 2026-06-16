@@ -1,5 +1,7 @@
 /*-- scss:defaults --*/
 
+/* Neutral colours */
+
 $white: #FFFFFF;
 $black: #000000;
 $silver: #FBFBFB;  // lighter grey
@@ -27,18 +29,23 @@ $primary: $black;
 $secondary: #C0EBEB;
 $control-placeholder: rgba($black, 0.5);
 
+/* Typography tokens */
+
 $bold: 700;
 $medium: 500;
 $regular: 400;
 
+$font-family-sans-serif: "National 2", sans-serif !default;
+
+/* Quarto and Bootstrap tokens */
+
 $navbar-bg: $silver !default;
 $navbar-fg: $primary !default;
 
-$font-family-sans-serif: "National 2", sans-serif !default;
 $def-padding: 0.375rem !default;
 $border-radius: 0 !default;
 
-/* Layout */
+/* Base page and typography */
 
 :root {
     --dashboard-embedded-min-height: 1000px;
@@ -88,16 +95,58 @@ body {
     }
 }
 
-p {
-    font-size: 16px !important;
-    font-weight: $regular !important;
-    color: $black !important;
-}
+p,
 label {
     font-size: 16px !important;
     font-weight: $regular !important;
     color: $black !important;
 }
+
+h1 {
+    color: $black !important;
+    font-size: 28px !important;
+    font-stretch: normal !important;
+    font-weight: $bold !important;
+}
+
+h2 {
+    color: $black !important;
+    font-size: 24px !important;
+    font-stretch: normal !important;
+    font-weight: $bold !important;
+}
+
+h3 {
+    color: $black !important;
+    font-size: 20px !important;
+    font-stretch: normal !important;
+    font-weight: $bold !important;
+}
+
+h4 {
+    color: $black !important;
+    font-size: 18px !important;
+    font-stretch: normal !important;
+    font-weight: $bold !important;
+}
+
+h5 {
+    color: $black !important;
+    font-size: 16px !important;
+    font-weight: $medium !important;
+    font-stretch: normal !important;
+}
+
+.sidebar-section-title {
+    color: $black !important;
+    font-family: $font-family-sans-serif !important;
+    font-size: 16px !important;
+    font-stretch: normal !important;
+    font-weight: $medium !important;
+    margin: 0 0 calc(2 * $def-padding);
+}
+
+/* Dashboard layout */
 
 #quarto-dashboard-header {
     flex: 0 0 auto;
@@ -379,7 +428,7 @@ label {
     }
 }
 
-/* Cards and containers */
+/* Cards, toolbars, and containers */
 
 .card,
 .card-body,
@@ -387,6 +436,8 @@ label {
 shiny-data-frame {
     min-height: 0 !important;
 }
+
+/* Card shell */
 
 .card {
     border: 0 !important;
@@ -416,6 +467,8 @@ shiny-data-frame {
     font-weight: $medium !important;
 }
 
+/* Toolbars */
+
 .toolbar {
     background-color: $silver !important;
     border: 0 !important;
@@ -435,6 +488,8 @@ shiny-data-frame {
 #render_explore_title > .card-title {
     margin-top: 0.1em;
 }
+
+/* Overview toolbar */
 
 .overview-toolbar {
     width: 100%;
@@ -493,6 +548,8 @@ shiny-data-frame {
         width: max-content !important;
     }
 }
+
+/* Container helpers */
 
 .borderless {
     border: 0 !important;
@@ -603,6 +660,8 @@ shiny-data-frame {
 .shiny-options-group {
     font-weight: $regular !important;
 }
+
+/* Sliders */
 
 $slider-height: 64px;
 $slider-label-size: 16px;
@@ -775,6 +834,8 @@ $slider-selected-color: $sky-blue-light;
     }
 }
 
+/* Buttons and actions */
+
 .btn {
     font-size: 16px !important;
     font-weight: $regular !important;
@@ -877,6 +938,8 @@ $slider-selected-color: $sky-blue-light;
     width: 100% !important;
 }
 
+/* Chart type toggles */
+
 #explore_bar,
 #explore_sankey,
 #timeseries_area,
@@ -945,6 +1008,8 @@ $slider-selected-color: $sky-blue-light;
         }
     }
 }
+
+/* Selectize controls */
 
 .shiny-input-select,
 .form-select,
@@ -1024,11 +1089,6 @@ $slider-selected-color: $sky-blue-light;
     color: black !important;
     font-size: 16px !important;
     font-weight: $regular !important;
-}
-
-.selectize-control.single .selectize-input > input {
-    caret-color: transparent !important;
-    color: transparent !important;
 }
 
 .selectize-control.single .selectize-input > input {
@@ -1408,46 +1468,6 @@ shiny-data-frame [role="grid"]::-webkit-scrollbar-thumb {
 }
 
 
-h1 {
-    color: $black !important;
-    font-size: 28px !important;
-    font-stretch: normal !important;
-    font-weight: $bold !important;
-}
-h2 {
-    color: $black !important;
-    font-size: 24px !important;
-    font-stretch: normal !important;
-    font-weight: $bold !important;
-}
-h3 {
-    color: $black !important;
-    font-size: 20px !important;
-    font-stretch: normal !important;
-    font-weight: $bold !important;
-}
-h4 {
-    color: $black !important;
-    font-size: 18px !important;
-    font-stretch: normal !important;
-    font-weight: $bold !important;
-}
-h5 {
-    color: $black !important;
-    font-size: 16px !important;
-    font-weight: $medium !important;
-    font-stretch: normal !important;
-}
-
-.sidebar-section-title {
-    color: $black !important;
-    font-family: $font-family-sans-serif !important;
-    font-size: 16px !important;
-    font-stretch: normal !important;
-    font-weight: $medium !important;
-    margin: 0 0 calc(2 * $def-padding);
-}
-
 /* Plotly */
 
 .js-plotly-plot .plotly,
@@ -1471,7 +1491,7 @@ h5 {
 .js-plotly-plot .plotly .legendtitletext tspan,
 .js-plotly-plot .plotly g.legendtitle text {
     font-size: 14px !important;
-    font-weight: $medium !important;
+    font-weight: $bold !important;
 }
 
 .js-plotly-plot .plotly .sankey text,
@@ -1547,9 +1567,4 @@ h5 {
     transform: translateY(-36%) !important;
     margin-right: 0 !important;
     padding-right: $def-padding !important;
-}
-
-
-.navbar .navbar-brand-container .navbar-title-text {
-    font-size: 50px !important;
 }

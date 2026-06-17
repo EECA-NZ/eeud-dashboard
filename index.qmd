@@ -3,6 +3,7 @@ title: "Energy End Use Database"
 #logo: "https://eecagovtnz.sharepoint.com/SiteAssets/__rectSitelogo__Only%20EECA%20white.png"
 resources:
   - www/
+  - data/eeud-colour-palette-2026.csv
 format: 
   dashboard:
     theme: "eeca.scss"
@@ -19,9 +20,11 @@ format:
         - text: |
             <script async src="https://cdn.jsdelivr.net/npm/@iframe-resizer/child@latest" type="text/javascript"></script>
         - text: |
-            <script src="www/slider-label-bounds.js"></script>
+            <script src="www/slider-label-bounds.js?v=20260617-1"></script>
         - text: |
             <script src="www/single-selectize-behaviour.js"></script>
+        - text: |
+            <script src="www/selectize-colours.js"></script>
         - text: |
             <script src="www/multi-selectize-behaviour.js"></script>
         - text: |
@@ -152,7 +155,6 @@ end_uses_selectize_choices = grouped_selectize_choices(eeud, 'EndUseGroup', 'End
 fuels_selectize_choices = grouped_selectize_choices(eeud, 'FuelGroup', 'Fuel')
 sectors_selectize_choices = grouped_selectize_choices(eeud, 'SectorGroup', 'Sector')
 technologies_selectize_choices = technology_selectize_choices(eeud)
-
 ```
 
 ```{python}
@@ -211,6 +213,8 @@ PLOTLY_AXIS_TITLE_SIZE = 14
 PLOTLY_LEGEND_TITLE_SIZE = 14
 PLOTLY_FONT_COLOR_LIGHT = "#000000"
 PLOTLY_FONT_COLOR_DARK = "#FFFFFF"
+EMPTY_DATA_MESSAGE = "There is no data to display for the applied filters."
+EMPTY_DATA_FONT_SIZE = 16
 
 def slugify_download_title(title):
     return re.sub(r"[^a-z0-9]+", "-", str(title).strip().lower()).strip("-")
@@ -231,6 +235,55 @@ def set_plotly_download_filename(fig, title):
         },
     }
     return widget
+
+def empty_data_message():
+    return ui.div(EMPTY_DATA_MESSAGE, class_="empty-data-message")
+
+def empty_data_figure(title):
+    fig = go.Figure()
+    fig.update_layout(
+        annotations=[
+            dict(
+                text=(
+                    f"<span style='font-size: {EMPTY_DATA_FONT_SIZE}px; "
+                    f"font-weight: 400;'>{EMPTY_DATA_MESSAGE}</span>"
+                ),
+                x=0.5,
+                y=0.5,
+                xref="paper",
+                yref="paper",
+                showarrow=False,
+                font=dict(
+                    family=PLOTLY_FONT_FAMILY,
+                    size=EMPTY_DATA_FONT_SIZE,
+                    color=PLOTLY_FONT_COLOR_LIGHT,
+                ),
+                xanchor="center",
+                yanchor="middle",
+            )
+        ],
+        dragmode=False,
+        font=dict(family=PLOTLY_FONT_FAMILY, size=EMPTY_DATA_FONT_SIZE),
+        margin=dict(l=0, r=0, t=0, b=0),
+        paper_bgcolor="rgba(255,255,255,255)",
+        plot_bgcolor="rgba(255,255,255,255)",
+        showlegend=False,
+        xaxis=dict(
+            fixedrange=True,
+            showgrid=False,
+            showticklabels=False,
+            visible=False,
+            zeroline=False,
+        ),
+        yaxis=dict(
+            fixedrange=True,
+            showgrid=False,
+            showticklabels=False,
+            visible=False,
+            zeroline=False,
+        ),
+    )
+    return set_plotly_download_filename(fig, title)
 
 def csv_download_filename(title):
     return f"{slugify_download_title(title) or 'eeud-data'}.csv"
@@ -1024,6 +1077,13 @@ def display_treemap():
         texttemplate="%{label}<br>%{value} TJ",
         textposition="middle center",
         branchvalues="total",
+        pathbar=dict(
+            thickness=24,
+            textfont=dict(
+                family=PLOTLY_FONT_FAMILY,
+                size=PLOTLY_FONT_SIZE,
+            )
+        ),
         hoverinfo="value",
         hovertemplate="%{label}<br>%{value} TJ<extra></extra>"
     )])
@@ -1050,7 +1110,7 @@ def display_treemap():
 ## Row
 
 ### Column {.sidebar}
-<h5>Display</h5>
+<div class="sidebar-section-title" role="heading" aria-level="5">Display</div>
 
 ```{python}
 ui.input_selectize(
@@ -1068,7 +1128,7 @@ ui.input_selectize(
 ```
 
 <br/>
-<h5>Filter</h5>
+<div class="sidebar-section-title" role="heading" aria-level="5">Filter</div>
 
 ```{python}
 sectors_dict = {'Residential': ['All Residential', 'Residential', 'Residential Unallocated'],
@@ -1076,29 +1136,25 @@ sectors_dict = {'Residential': ['All Residential', 'Residential', 'Residential U
 
 ui.input_selectize('explore_end_use', "End Use", end_uses_selectize_choices, multiple=True,
     options={
-        'placeholder': "All End Uses",
-        'plugins': ['clear_button']
+        'placeholder': "All End Uses"
     }
 )
 
 ui.input_selectize('explore_fuels', "Fuel Type", fuels_selectize_choices, multiple=True,
     options={
-        'placeholder': "All Fuel Types",
-        'plugins': ['clear_button']
+        'placeholder': "All Fuel Types"
     }
 )
 
 ui.input_selectize('explore_sectors', "Sector", sectors_selectize_choices, multiple=True,
     options={
-        'placeholder': "All Sectors",
-        'plugins': ['clear_button']
+        'placeholder': "All Sectors"
     }
 )
 
 ui.input_selectize('explore_technologies', "Technology", technologies_selectize_choices, multiple=True,
     options={
-        'placeholder': "All Technologies",
-        'plugins': ['clear_button']
+        'placeholder': "All Technologies"
     }
 ) 
 
@@ -1129,13 +1185,13 @@ def explore_eeud_filtered():
 ```
 
 <br/>
-<h5>Data View</h5>
+<div class="sidebar-section-title" role="heading" aria-level="5">Data View</div>
 
 ```{python}
 @render.download(
     label=download_button_label("Download Chart Data"),
     filename=lambda: csv_download_filename(
-        f"Stationary Energy Usage {input.explore_left_node()} by {input.explore_right_node()} {input.explore_period()}"
+        f"Energy Usage for {input.explore_period()} - {input.explore_left_node()} by {input.explore_right_node()}"
     )
 )
 async def download_explore_filtered_data():
@@ -1152,6 +1208,13 @@ async def download_explore_filtered_data():
 # https://github.com/posit-dev/py-shiny/issues/973
 
 @render.ui
+def render_explore_title():
+    return ui.tags.div(
+        ui.tags.span(f"Energy Usage for {input.explore_period()}", style="display: inline"),
+        class_="card-title html-fill-item html-fill-container"
+    )
+
+@render.ui
 def render_bar_button():
     btn_class = 'btn-primary' if explore_chart_type.get() == 'Bar' else 'btn-secondary'
     return ui.input_action_button(
@@ -1159,6 +1222,7 @@ def render_bar_button():
         chart_type_button_label("bar", "Bar"),
         class_=btn_class
     )
+
 @reactive.effect
 def set_explore_bar_chart():
     input.explore_bar()
@@ -1172,9 +1236,10 @@ def render_sankey_button():
     btn_class = 'btn-primary' if explore_chart_type.get() == 'Sankey' else 'btn-secondary'
     return ui.input_action_button(
         "explore_sankey",
-        chart_type_button_label("sankey", "Sankey"),
+        chart_type_button_label("sankey", "Alluvial"),
         class_=btn_class
     )
+
 @reactive.effect
 def set_explore_sankey_chart():
     input.explore_sankey()
@@ -1186,8 +1251,6 @@ def set_explore_sankey_chart():
 ```
 
 ```{python}
-#| title: Stationary Energy Usage
-
 # Initialize a reactive value
 explore_chart_type = reactive.value('Sankey')
 
@@ -1196,12 +1259,19 @@ def display_explore_chart():
     left_node = title_case(input.explore_left_node())
     right_node = title_case(input.explore_right_node())
     explore_df = explore_eeud_filtered()
+    chart_title = f"Stationary Energy Usage {left_node} to {right_node} {input.explore_period()}"
+
+    if explore_df.empty:
+        return empty_data_figure(chart_title)
     
     if left_node == right_node:
         explore_df['Proxy'] = 'Total Energy Use'
         right_node = 'Proxy'
 
     explore_df = explore_df.groupby([left_node, right_node]).sum(numeric_only=True).reset_index(drop=False)
+
+    if explore_df.empty:
+        return empty_data_figure(chart_title)
 
     if explore_chart_type.get() == 'Sankey':
         
@@ -1265,7 +1335,7 @@ def display_explore_chart():
 
 ### Column {.sidebar}
 
-<h5>Display</h5>
+<div class="sidebar-section-title" role="heading" aria-level="5">Display</div>
 
 ```{python}
 ui.input_selectize(
@@ -1283,35 +1353,31 @@ ui.input_selectize(
 ```
 
 <br/>
-<h5>Filter</h5>
+<div class="sidebar-section-title" role="heading" aria-level="5">Filter</div>
 
 ```{python}
 
 ui.input_selectize('timeseries_end_use', "End Use", end_uses_selectize_choices, multiple=True,
     options={
-        'placeholder': "All End Uses",
-        'plugins': ['clear_button']
+        'placeholder': "All End Uses"
     }
 )
 
 ui.input_selectize('timeseries_fuels', "Fuel Type", fuels_selectize_choices, multiple=True,
     options={
-        'placeholder': "All Fuel Types",
-        'plugins': ['clear_button']
+        'placeholder': "All Fuel Types"
     }
 )
 
 ui.input_selectize('timeseries_sectors', "Sector", sectors_selectize_choices, multiple=True,
     options={
-        'placeholder': "All Sectors",
-        'plugins': ['clear_button']
+        'placeholder': "All Sectors"
     }
 )
 
 ui.input_selectize('timeseries_technologies', "Technology", technologies_selectize_choices, multiple=True,
     options={
-        'placeholder': "All Technologies",
-        'plugins': ['clear_button']
+        'placeholder': "All Technologies"
     }
 )
 
@@ -1335,13 +1401,13 @@ def timeseries_eeud_filtered():
 ```
 
 <br/>
-<h5>Data View</h5>
+<div class="sidebar-section-title" role="heading" aria-level="5">Data View</div>
 
 ```{python}
 @render.download(
     label=download_button_label("Download Chart Data"),
     filename=lambda: csv_download_filename(
-        f"Energy Usage Time Series {input.timeseries_category()} {input.timeseries_display()}"
+        f"Energy Usage Time Series - {input.timeseries_category()} {input.timeseries_display()}"
     )
 )
 async def download_timeseries_filtered_data():
@@ -1397,7 +1463,17 @@ timeseries_chart_type = reactive.value('Line')
 @render_widget
 def display_timeseries_chart():
     category = title_case(input.timeseries_category())
-    timeseries_df = timeseries_eeud_filtered().groupby([category, 'Period']).sum(numeric_only=True).reset_index(drop=False)
+    filtered_df = timeseries_eeud_filtered()
+    chart_title = f"Energy Usage Time Series {category} {input.timeseries_display()}"
+
+    if filtered_df.empty:
+        return empty_data_figure(chart_title)
+
+    timeseries_df = filtered_df.groupby([category, 'Period']).sum(numeric_only=True).reset_index(drop=False)
+
+    if timeseries_df.empty:
+        return empty_data_figure(chart_title)
+
     total = True
     if input.timeseries_display() == "Proportional":
         total = False
@@ -1406,7 +1482,7 @@ def display_timeseries_chart():
         timeseries_df['TJ'] = (timeseries_df['TJ'] / timeseries_df['TotalTJ']) * 100
 
     if timeseries_chart_type.get() == 'Alluvial':
-        timeseries_links, timeseries_nodes = create_alluvial_links_for_dict(timeseries_eeud_filtered(), category, 'PeriodEndDate')
+        timeseries_links, timeseries_nodes = create_alluvial_links_for_dict(filtered_df, category, 'PeriodEndDate')
         fig = go.Figure(data=[go.Sankey(
             arrangement="fixed",
             node = dict(
@@ -1500,34 +1576,30 @@ def display_timeseries_chart():
 
 ### Column {.sidebar}
 
-<h5>Filter</h5>
+<div class="sidebar-section-title" role="heading" aria-level="5">Filter</div>
 
 ```{python}
 ui.input_selectize('data_end_use', "End Use", end_uses_selectize_choices, multiple=True,
     options={
-        'placeholder': "All End Uses",
-        'plugins': ['clear_button']
+        'placeholder': "All End Uses"
     }
 )
 
 ui.input_selectize('data_fuels', "Fuel Type", fuels_selectize_choices, multiple=True,
     options={
-        'placeholder': "All Fuel Types",
-        'plugins': ['clear_button']
+        'placeholder': "All Fuel Types"
     }
 )
 
 ui.input_selectize('data_sectors', "Sector", sectors_selectize_choices, multiple=True,
     options={
-        'placeholder': "All Sectors",
-        'plugins': ['clear_button']
+        'placeholder': "All Sectors"
     }
 )
 
 ui.input_selectize('data_technologies', "Technology", technologies_selectize_choices, multiple=True,
     options={
-        'placeholder': "All Technologies",
-        'plugins': ['clear_button']
+        'placeholder': "All Technologies"
     }
 ) 
 
@@ -1559,7 +1631,7 @@ def data_eeud_filtered():
 ```
 
 <br/>
-<h5>Data View</h5>
+<div class="sidebar-section-title" role="heading" aria-level="5">Data View</div>
 
 ```{python}
 @render.download(
@@ -1575,9 +1647,21 @@ async def download_data_filtered_data():
 
 ### Column
 
-```{python} 
+```{python}
+#| include: false
 @render.data_frame
-def dataview():
+def dataview_grid():
     data = build_data_grid_download_data()
     return render.DataGrid(data, width="100%", summary=False)
+```
+
+```{python} 
+@render.ui
+def dataview():
+    data = data_eeud_filtered()
+
+    if data.empty:
+        return empty_data_message()
+
+    return ui.output_data_frame("dataview_grid")
 ```

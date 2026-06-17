@@ -10,30 +10,12 @@
     });
   };
 
-  const enableForceEdges = () => {
-    if (!window.jQuery) {
-      return false;
-    }
-
-    let applied = false;
-
-    sliderIds.forEach((id) => {
-      const slider = window.jQuery(`#${id}`).data("ionRangeSlider");
-      if (slider) {
-        slider.update({ force_edges: true });
-        applied = true;
-      }
-    });
-
-    return applied;
-  };
-
   const startForceEdgeRetries = () => {
     let attempts = 0;
     const intervalId = window.setInterval(() => {
       attempts += 1;
       setForceEdgeAttrs();
-      if (enableForceEdges() || attempts >= 40) {
+      if (attempts >= 40) {
         window.clearInterval(intervalId);
       }
     }, 150);

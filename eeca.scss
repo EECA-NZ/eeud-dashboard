@@ -1,5 +1,7 @@
 /*-- scss:defaults --*/
 
+/* Neutral colours */
+
 $white: #FFFFFF;
 $black: #000000;
 $silver: #FBFBFB;  // lighter grey
@@ -27,18 +29,23 @@ $primary: $black;
 $secondary: #C0EBEB;
 $control-placeholder: rgba($black, 0.5);
 
+/* Typography tokens */
+
 $bold: 700;
 $medium: 500;
 $regular: 400;
 
+$font-family-sans-serif: "National 2", sans-serif !default;
+
+/* Quarto and Bootstrap tokens */
+
 $navbar-bg: $silver !default;
 $navbar-fg: $primary !default;
 
-$font-family-sans-serif: "National 2", sans-serif !default;
 $def-padding: 0.375rem !default;
 $border-radius: 0 !default;
 
-/* Layout */
+/* Base page and typography */
 
 :root {
     --dashboard-embedded-min-height: 1000px;
@@ -77,6 +84,7 @@ body {
     font-family: $font-family-sans-serif !important;
     //font-stretch: condensed !important;
     font-weight: $regular !important;
+    color: $black;
 
     &.quarto-dashboard.dashboard-fill {
         display: flex;
@@ -87,14 +95,58 @@ body {
     }
 }
 
-p {
-    font-size: 16px !important;
-    font-weight: $regular !important;
-}
+p,
 label {
     font-size: 16px !important;
     font-weight: $regular !important;
+    color: $black !important;
 }
+
+h1 {
+    color: $black !important;
+    font-size: 28px !important;
+    font-stretch: normal !important;
+    font-weight: $bold !important;
+}
+
+h2 {
+    color: $black !important;
+    font-size: 24px !important;
+    font-stretch: normal !important;
+    font-weight: $bold !important;
+}
+
+h3 {
+    color: $black !important;
+    font-size: 20px !important;
+    font-stretch: normal !important;
+    font-weight: $bold !important;
+}
+
+h4 {
+    color: $black !important;
+    font-size: 18px !important;
+    font-stretch: normal !important;
+    font-weight: $bold !important;
+}
+
+h5 {
+    color: $black !important;
+    font-size: 16px !important;
+    font-weight: $medium !important;
+    font-stretch: normal !important;
+}
+
+.sidebar-section-title {
+    color: $black !important;
+    font-family: $font-family-sans-serif !important;
+    font-size: 16px !important;
+    font-stretch: normal !important;
+    font-weight: $medium !important;
+    margin: 0 0 calc(2 * $def-padding);
+}
+
+/* Dashboard layout */
 
 #quarto-dashboard-header {
     flex: 0 0 auto;
@@ -149,21 +201,51 @@ label {
 }
 
 .bslib-sidebar-layout {
+    box-sizing: border-box;
+    isolation: isolate;
     max-height: 100%;
+    min-width: 0 !important;
+    position: relative;
+    width: 100%;
 
     > .main,
     .sidebar-content {
+        box-sizing: border-box;
         max-height: 100%;
+        max-width: 100%;
+        min-width: 0 !important;
         overflow: hidden;
+    }
+
+    > .main {
+        position: relative;
+        width: 100%;
+        z-index: 1;
+    }
+
+    .sidebar-content,
+    .sidebar-content > .bslib-grid,
+    .sidebar-content .bslib-grid > .html-fill-item,
+    .sidebar-content .card,
+    .sidebar-content .card-body,
+    .sidebar-content .cell-output-display,
+    .sidebar-content .shiny-ipywidget-output,
+    .sidebar-content shiny-data-frame {
+        max-width: 100% !important;
+        min-width: 0 !important;
     }
 
     .sidebar {
         background-color: $silver !important;
         border: 0 !important;
+        flex: 0 0 auto !important;
         height: 100% !important;
         max-height: 100%;
+        min-width: 0 !important;
         overflow: hidden !important;
         padding: 0 !important;
+        position: relative;
+        z-index: 2;
 
         > .html-fill-container,
         > .html-fill-item {
@@ -174,18 +256,18 @@ label {
             min-height: 0 !important;
             overflow-x: hidden !important;
             overflow-y: auto !important;
-            padding: calc($def-padding * 2) $def-padding calc($def-padding * 2) calc($def-padding * 2) !important;
-            scrollbar-color: rgba($black, 0.25) $white;
+            padding: calc($def-padding * 2) $def-padding calc($def-padding * 2) $def-padding !important;
+            scrollbar-color: rgba($black, 0.25) $silver;
         }
 
         > .html-fill-container::-webkit-scrollbar,
         > .html-fill-item::-webkit-scrollbar {
-            background: $white !important;
+            background: $silver !important;
         }
 
         > .html-fill-container::-webkit-scrollbar-track,
         > .html-fill-item::-webkit-scrollbar-track {
-            background: $white !important;
+            background: $silver !important;
         }
 
         > .html-fill-container::-webkit-scrollbar-thumb,
@@ -346,7 +428,7 @@ label {
     }
 }
 
-/* Cards and containers */
+/* Cards, toolbars, and containers */
 
 .card,
 .card-body,
@@ -354,6 +436,22 @@ label {
 shiny-data-frame {
     min-height: 0 !important;
 }
+
+.empty-data-message {
+    align-items: center !important;
+    color: $black !important;
+    display: flex !important;
+    font-size: 16px !important;
+    font-weight: $regular !important;
+    height: 100% !important;
+    justify-content: center !important;
+    min-height: 280px;
+    padding: 1rem;
+    text-align: center;
+    width: 100% !important;
+}
+
+/* Card shell */
 
 .card {
     border: 0 !important;
@@ -383,6 +481,8 @@ shiny-data-frame {
     font-weight: $medium !important;
 }
 
+/* Toolbars */
+
 .toolbar {
     background-color: $silver !important;
     border: 0 !important;
@@ -393,6 +493,17 @@ shiny-data-frame {
         background-color: $silver !important;
     }
 }
+
+.card-toolbar .cell-output-display:has(#render_explore_title),
+#render_explore_title {
+    display: contents !important;
+}
+
+#render_explore_title > .card-title {
+    margin-top: 0.1em;
+}
+
+/* Overview toolbar */
 
 .overview-toolbar {
     width: 100%;
@@ -451,6 +562,8 @@ shiny-data-frame {
         width: max-content !important;
     }
 }
+
+/* Container helpers */
 
 .borderless {
     border: 0 !important;
@@ -562,6 +675,8 @@ shiny-data-frame {
     font-weight: $regular !important;
 }
 
+/* Sliders */
+
 $slider-height: 64px;
 $slider-label-size: 16px;
 $slider-track-top: 34px;
@@ -573,11 +688,13 @@ $slider-handle-dot-size: 8px;
 $slider-min-max-padding: 8px;
 $slider-selected-padding: 4px;
 $slider-track-color: $secondary;
-$slider-selected-color: $sky-blue;
+$slider-selected-color: $sky-blue-light;
 
 .irs {
+    box-sizing: border-box !important;
     display: block !important;
     margin: 0 !important;
+    max-width: 100% !important;
     width: 100% !important;
 }
 
@@ -611,7 +728,9 @@ $slider-selected-color: $sky-blue;
         background: $slider-selected-color !important;
         border-color: $slider-selected-color !important;
         border-radius: 0 !important;
-        color: $black !important;
+        color: $sea-blue !important;
+        font-size: 15px !important;
+        font-weight: $bold !important;
         padding: $slider-selected-padding !important;
         text-shadow: none !important;
         top: $slider-selected-label-top !important;
@@ -628,13 +747,23 @@ $slider-selected-color: $sky-blue;
 
     .irs-line {
         background: $slider-track-color !important;
+        cursor: default !important;
         height: 1px !important;
         top: $slider-track-top !important;
+
+        &::before {
+            cursor: default !important;
+        }
     }
 
     .irs-bar {
         background: $slider-selected-color !important;
+        cursor: default !important;
         top: $slider-track-top !important;
+
+        &::before {
+            cursor: default !important;
+        }
     }
 
     .irs-shadow {
@@ -648,7 +777,7 @@ $slider-selected-color: $sky-blue;
         border-radius: 50% !important;
         box-sizing: border-box !important;
         box-shadow: none !important;
-        cursor: pointer !important;
+        cursor: ew-resize !important;
         height: $slider-handle-size !important;
         top: $slider-handle-top !important;
         transform: none !important;
@@ -673,6 +802,17 @@ $slider-selected-color: $sky-blue;
     }
 }
 
+.sidebar .cell-output-display:has(.shiny-input-container > #explore_period),
+.sidebar .cell-output-display:has(.shiny-input-container > #data_period) {
+    overflow: visible !important;
+}
+
+.shiny-input-container:has(> #explore_period),
+.shiny-input-container:has(> #data_period) {
+    max-width: 100% !important;
+    min-width: 0 !important;
+}
+
 .shiny-input-container {
     &:has(> #explore_period) > .irs--shiny {
         .irs-line {
@@ -692,11 +832,23 @@ $slider-selected-color: $sky-blue;
 
         .irs-bar {
             background: $slider-selected-color !important;
+            cursor: grab !important;
             height: 4px !important;
             top: $slider-range-top !important;
+
+            &::before {
+                cursor: grab !important;
+            }
+
+            &:active,
+            &:active::before {
+                cursor: grabbing !important;
+            }
         }
     }
 }
+
+/* Buttons and actions */
 
 .btn {
     font-size: 16px !important;
@@ -786,7 +938,7 @@ $slider-selected-color: $sky-blue;
     line-height: 1 !important;
     margin-bottom: 0 !important;
     text-align: center !important;
-    transform: translateY(1px) !important;
+    //transform: translateY(-1px) !important;
     width: 1rem !important;
 }
 
@@ -799,6 +951,8 @@ $slider-selected-color: $sky-blue;
     overflow: visible !important;
     width: 100% !important;
 }
+
+/* Chart type toggles */
 
 #explore_bar,
 #explore_sankey,
@@ -869,6 +1023,8 @@ $slider-selected-color: $sky-blue;
     }
 }
 
+/* Selectize controls */
+
 .shiny-input-select,
 .form-select,
 .selectize-control,
@@ -882,12 +1038,72 @@ $slider-selected-color: $sky-blue;
 
 }
 
+.sidebar .cell-output-display:has(.selectize-input.dropdown-active),
+.sidebar .shiny-input-container:has(.selectize-input.dropdown-active),
+.sidebar .selectize-control:has(.selectize-input.dropdown-active) {
+    overflow: visible !important;
+    position: relative;
+    z-index: 1000 !important;
+}
+
 .selectize-control.multi .selectize-input > .item,
 .selectize-control.multi .selectize-input > div {
-    background-color: $sky-blue !important;
-    color: black !important;
+    align-items: stretch !important;
+    background-color: $sky-blue-light !important;
+    color: $sea-blue !important;
+    cursor: default !important;
+    display: inline-flex !important;
+    font-size: 15px !important;
+    font-weight: $bold !important;
+    line-height: 1 !important;
+    padding: 0 !important;
+}
+
+.selectize-control.multi .selectize-input > .item > .multi-selectize-item-label,
+.selectize-control.multi .selectize-input > div > .multi-selectize-item-label {
+    align-items: center !important;
+    display: inline-flex !important;
+    line-height: 1 !important;
+    padding: 5px 0 5px 7px !important;
+}
+
+.selectize-control.multi .selectize-input > .item .remove,
+.selectize-control.multi .selectize-input > div .remove {
+    align-items: center !important;
+    align-self: stretch !important;
+    border-radius: 0 !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
     font-size: 16px !important;
-    font-weight: $regular !important;
+    font-weight: $bold !important;
+    height: auto !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+    margin: 0 !important;
+    min-height: 0 !important;
+    padding-left: 0.45rem !important;
+    padding-right: 0.45rem !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    text-decoration: none !important;
+}
+
+.selectize-control.multi .selectize-input > .item .remove:hover,
+.selectize-control.multi .selectize-input > .item .remove:focus,
+.selectize-control.multi .selectize-input > .item .remove:focus-visible,
+.selectize-control.multi .selectize-input > div .remove:hover,
+.selectize-control.multi .selectize-input > div .remove:focus,
+.selectize-control.multi .selectize-input > div .remove:focus-visible {
+    background-color: rgba($white, 0.35) !important;
+    color: inherit !important;
+}
+
+.selectize-control.multi .selectize-input > .multi-selectize-hidden-group-item {
+    display: none !important;
+}
+
+.selectize-control.multi .selectize-input > .multi-selectize-group-item > .multi-selectize-group-item-remove {
+    display: inline-flex !important;
 }
 
 .selectize-control.single .selectize-input > .item {
@@ -902,14 +1118,9 @@ $slider-selected-color: $sky-blue;
     color: transparent !important;
 }
 
-.selectize-control.single .selectize-input > input {
-    caret-color: transparent !important;
-    color: transparent !important;
-}
-
 /* Replace only the single-select triangle */
 .selectize-control.single .selectize-input:not(.no-arrow):after {
-    content: "⌵" !important; /* "⌄" or "⌵", "▾", "˅" */
+    content: "\f078" !important;
     border: none !important;
     background: none !important;
     width: auto !important;
@@ -917,19 +1128,20 @@ $slider-selected-color: $sky-blue;
     top: 50% !important;
     right: 12px !important;
     margin-top: 0 !important;
-    transform: translateY(-67%) !important;
-    font-size: 16px !important;
+    transform: translateY(-50%) !important;
+    font-family: "Font Awesome 7 Free", "Font Awesome 6 Free" !important;
+    font-size: 12px !important;
+    font-style: normal !important;
     line-height: 1 !important;
     color: black !important;
     pointer-events: none !important;
-    font-weight: bold !important;
+    font-weight: 900 !important;
     transition: transform 0.3s ease;
 }
 
 /* Open */
 .selectize-control.single .selectize-input.dropdown-active:not(.no-arrow):after {
-    font-weight: bold !important;
-    transform: translateY(-33%) scaleY(-1) !important;
+    transform: translateY(-50%) scaleY(-1) !important;
     transition: transform 0.3s ease;
 }
 
@@ -951,10 +1163,93 @@ $slider-selected-color: $sky-blue;
     width: 100% !important;
 }
 
+.selectize-control.multi .selectize-input.multi-selectize-add-placeholder.has-items > input {
+    max-width: 100% !important;
+    min-width: min(100%, 12.5rem) !important;
+    width: min(100%, 12.5rem) !important;
+    padding: calc($def-padding / 2) 0 $def-padding !important;
+}
+
 .selectize-input > input::placeholder {
     color: $control-placeholder !important;
     font-size: 16px !important;
     font-weight: $regular !important;
+}
+
+.selectize-control.multi .selectize-input > .clear {
+    display: none !important;
+}
+
+.multi-selectize-clear-container {
+    position: relative;
+    transform: translateY(-4px) !important;
+
+    > label.control-label,
+    > label {
+        display: block;
+        padding-right: 4.75rem;
+    }
+}
+
+.multi-selectize-clear-button {
+    align-items: center;
+    appearance: none;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    color: $black;
+    cursor: pointer;
+    display: none;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: $regular;
+    gap: 0.35rem;
+    height: 1.75rem;
+    min-width: 29px;
+    justify-content: center;
+    line-height: 1;
+    padding: 0 0.35rem;
+    position: absolute;
+    right: 0;
+    top: -0.25rem;
+    width: auto;
+}
+
+.multi-selectize-clear-label {
+    align-items: center;
+    display: inline-flex;
+    font-size: 14px;
+    font-weight: $medium;
+    //font-stretch: condensed;
+    height: 100%;
+    line-height: 1;
+}
+
+.multi-selectize-clear-button > i {
+    align-items: center;
+    display: inline-flex;
+    font-size: 12px;
+    height: 100%;
+    justify-content: center;
+    line-height: 1;
+    //transform: translateY(2px);
+}
+
+.multi-selectize-clear-button:not([hidden]),
+.multi-selectize-clear-container.has-multi-selectize-value > .multi-selectize-clear-button {
+    display: inline-flex;
+}
+
+.multi-selectize-clear-button[hidden] {
+    display: none !important;
+}
+
+.multi-selectize-clear-button:hover,
+.multi-selectize-clear-button:focus,
+.multi-selectize-clear-button:focus-visible {
+    background: $secondary;
+    color: $sea-blue;
+    outline: 0;
 }
 
 .form-select,
@@ -964,6 +1259,11 @@ $slider-selected-color: $sky-blue;
     border-bottom: 4px solid transparent !important;
     box-shadow: inset 0 -1px 0 $secondary !important;
     font-size: 16px !important;
+}
+
+.selectize-control.multi .selectize-input {
+    padding-left: $def-padding !important;
+    padding-right: $def-padding !important;
 }
 
 .form-select:focus,
@@ -989,11 +1289,17 @@ $slider-selected-color: $sky-blue;
     box-shadow: 0 0px 0px rgba($black, 0.15) !important;
     margin-top: 0 !important;
     top: 100% !important;
+    z-index: 1001 !important;
 }
 
 .selectize-dropdown .option {
     background: $white !important;
     color: black !important;
+}
+
+.selectize-dropdown.multi-selectize-group-actions .option {
+    font-size: 15px !important;
+    font-weight: $regular !important;
 }
 
 .selectize-dropdown .optgroup:before {
@@ -1042,12 +1348,23 @@ $slider-selected-color: $sky-blue;
     width: 1.75rem;
 }
 
+.selectize-dropdown.multi-selectize-group-actions .multi-selectize-add-group > i {
+    align-items: center;
+    display: inline-flex;
+    font-size: 12.5px;
+    height: 100%;
+    justify-content: center;
+    line-height: 1;
+    transform: translateY(1px);
+}
+
 .selectize-dropdown.multi-selectize-group-actions .multi-selectize-add-group:hover,
 .selectize-dropdown.multi-selectize-group-actions .multi-selectize-add-group:focus,
 .selectize-dropdown.multi-selectize-group-actions .multi-selectize-add-group:focus-visible {
     background: $secondary;
-    outline: 0px solid $sky-blue;
-    outline-offset: 0px;
+    color: $sea-blue;
+    //outline: 0px solid $sky-blue;
+    //outline-offset: 0px;
 }
 
 .selectize-dropdown-content {
@@ -1062,7 +1379,7 @@ $slider-selected-color: $sky-blue;
 }
 
 .selectize-dropdown .option.selected {
-    background: $sky-blue !important;
+    background: $sky-blue-light !important;
     color: black !important;
 }
 
@@ -1075,7 +1392,7 @@ $slider-selected-color: $sky-blue;
 .selectize-control.single .selectize-dropdown .option.selected,
 .selectize-control.single .selectize-dropdown .option.selected:hover,
 .selectize-control.single .selectize-dropdown .option.selected.active {
-    background: $sky-blue !important;
+    background: $sky-blue-light !important;
     color: black !important;
 }
 
@@ -1174,37 +1491,6 @@ shiny-data-frame [role="grid"]::-webkit-scrollbar-thumb {
     //border-radius: 999px !important;
 }
 
-
-h1 {
-    color: $primary !important;
-    font-size: 28px !important;
-    font-stretch: normal !important;
-    font-weight: $bold !important;
-}
-h2 {
-    color: $primary !important;
-    font-size: 24px !important;
-    font-stretch: normal !important;
-    font-weight: $bold !important;
-}
-h3 {
-    color: $primary !important;
-    font-size: 20px !important;
-    font-stretch: normal !important;
-    font-weight: $bold !important;
-}
-h4 {
-    color: $primary !important;
-    font-size: 18px !important;
-    font-stretch: normal !important;
-    font-weight: $bold !important;
-}
-h5 {
-    color: $primary !important;
-    font-size: 16px !important;
-    font-weight: $medium !important;
-    font-stretch: normal !important;
-}
 
 /* Plotly */
 

@@ -1077,6 +1077,13 @@ def display_treemap():
         texttemplate="%{label}<br>%{value} TJ",
         textposition="middle center",
         branchvalues="total",
+        pathbar=dict(
+            thickness=24,
+            textfont=dict(
+                family=PLOTLY_FONT_FAMILY,
+                size=PLOTLY_FONT_SIZE,
+            )
+        ),
         hoverinfo="value",
         hovertemplate="%{label}<br>%{value} TJ<extra></extra>"
     )])

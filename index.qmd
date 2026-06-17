@@ -22,6 +22,8 @@ format:
         - text: |
             <script src="www/slider-label-bounds.js?v=20260617-1"></script>
         - text: |
+            <script src="www/download-button-state.js?v=20260618-1"></script>
+        - text: |
             <script src="www/single-selectize-behaviour.js"></script>
         - text: |
             <script src="www/selectize-colours.js"></script>
@@ -48,6 +50,7 @@ from plotly.graph_objects import FigureWidget
 
 # Dashboard modules
 from shiny import render, reactive, ui
+from shiny.session import get_current_session
 from shinywidgets import render_widget, render_plotly
 
 eeud = pd.read_csv('./data/EEUD-20032026.csv')#.set_index('Row')
@@ -240,7 +243,18 @@ def empty_data_message():
     return ui.div(EMPTY_DATA_MESSAGE, class_="empty-data-message")
 
 def empty_data_figure(title):
-    fig = go.Figure()
+    # Keep a real trace in the figure. Annotation-only Plotly widgets can be
+    # brittle when they are hidden in a tab and then re-rendered.
+    fig = go.Figure(data=[
+        go.Scatter(
+            x=[0],
+            y=[0],
+            mode="markers",
+            marker=dict(color="rgba(0,0,0,0)", size=1),
+            hoverinfo="skip",
+            showlegend=False,
+        )
+    ])
     fig.update_layout(
         annotations=[
             dict(
@@ -270,6 +284,7 @@ def empty_data_figure(title):
         showlegend=False,
         xaxis=dict(
             fixedrange=True,
+            range=[-1, 1],
             showgrid=False,
             showticklabels=False,
             visible=False,
@@ -277,6 +292,7 @@ def empty_data_figure(title):
         ),
         yaxis=dict(
             fixedrange=True,
+            range=[-1, 1],
             showgrid=False,
             showticklabels=False,
             visible=False,
@@ -287,6 +303,13 @@ def empty_data_figure(title):
 
 def csv_download_filename(title):
     return f"{slugify_download_title(title) or 'eeud-data'}.csv"
+
+async def set_download_button_disabled(button_id, disabled):
+    session = get_current_session()
+    await session.send_custom_message(
+        "download-button-state",
+        {"id": button_id, "disabled": bool(disabled)}
+    )
 
 DOWNLOAD_FILTER_COLUMNS = {
     "EndUse": "End Use",
@@ -1182,6 +1205,13 @@ def explore_eeud_filtered():
 
     return data
 
+@reactive.effect
+async def update_explore_download_button_state():
+    await set_download_button_disabled(
+        "download_explore_filtered_data",
+        explore_eeud_filtered().empty
+    )
+
 ```
 
 <br/>
@@ -1398,6 +1428,13 @@ def timeseries_eeud_filtered():
         data = data[data['EndUse'].isin(input.timeseries_end_use())]
 
     return data
+
+@reactive.effect
+async def update_timeseries_download_button_state():
+    await set_download_button_disabled(
+        "download_timeseries_filtered_data",
+        timeseries_eeud_filtered().empty
+    )
 ```
 
 <br/>
@@ -1628,6 +1665,13 @@ def data_eeud_filtered():
     data = data[['EndUse', 'EndUseGroup', 'Fuel', 'FuelGroup', 'Sector', 'SectorANZSIC', 'SectorGroup', 'Technology', 'TechnologyGroup', 'Transport', 'TJ', 'Period', 'PeriodEndDate']]
 
     return data
+
+@reactive.effect
+async def update_data_download_button_state():
+    await set_download_button_disabled(
+        "download_data_filtered_data",
+        data_eeud_filtered().empty
+    )
 ```
 
 <br/>

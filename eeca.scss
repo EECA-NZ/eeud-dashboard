@@ -437,6 +437,20 @@ shiny-data-frame {
     min-height: 0 !important;
 }
 
+.empty-data-message {
+    align-items: center !important;
+    color: $black !important;
+    display: flex !important;
+    font-size: 16px !important;
+    font-weight: $regular !important;
+    height: 100% !important;
+    justify-content: center !important;
+    min-height: 280px;
+    padding: 1rem;
+    text-align: center;
+    width: 100% !important;
+}
+
 /* Card shell */
 
 .card {
@@ -1024,6 +1038,14 @@ $slider-selected-color: $sky-blue-light;
 
 }
 
+.sidebar .cell-output-display:has(.selectize-input.dropdown-active),
+.sidebar .shiny-input-container:has(.selectize-input.dropdown-active),
+.sidebar .selectize-control:has(.selectize-input.dropdown-active) {
+    overflow: visible !important;
+    position: relative;
+    z-index: 1000 !important;
+}
+
 .selectize-control.multi .selectize-input > .item,
 .selectize-control.multi .selectize-input > div {
     align-items: stretch !important;
@@ -1160,6 +1182,7 @@ $slider-selected-color: $sky-blue-light;
 
 .multi-selectize-clear-container {
     position: relative;
+    transform: translateY(-4px) !important;
 
     > label.control-label,
     > label {
@@ -1266,6 +1289,7 @@ $slider-selected-color: $sky-blue-light;
     box-shadow: 0 0px 0px rgba($black, 0.15) !important;
     margin-top: 0 !important;
     top: 100% !important;
+    z-index: 1001 !important;
 }
 
 .selectize-dropdown .option {
@@ -1491,7 +1515,7 @@ shiny-data-frame [role="grid"]::-webkit-scrollbar-thumb {
 .js-plotly-plot .plotly .legendtitletext tspan,
 .js-plotly-plot .plotly g.legendtitle text {
     font-size: 14px !important;
-    font-weight: $bold !important;
+    font-weight: $medium !important;
 }
 
 .js-plotly-plot .plotly .sankey text,

@@ -213,6 +213,8 @@ PLOTLY_AXIS_TITLE_SIZE = 14
 PLOTLY_LEGEND_TITLE_SIZE = 14
 PLOTLY_FONT_COLOR_LIGHT = "#000000"
 PLOTLY_FONT_COLOR_DARK = "#FFFFFF"
+EMPTY_DATA_MESSAGE = "There is no data to display for the applied filters."
+EMPTY_DATA_FONT_SIZE = 16
 
 def slugify_download_title(title):
     return re.sub(r"[^a-z0-9]+", "-", str(title).strip().lower()).strip("-")
@@ -233,6 +235,55 @@ def set_plotly_download_filename(fig, title):
         },
     }
     return widget
+
+def empty_data_message():
+    return ui.div(EMPTY_DATA_MESSAGE, class_="empty-data-message")
+
+def empty_data_figure(title):
+    fig = go.Figure()
+    fig.update_layout(
+        annotations=[
+            dict(
+                text=(
+                    f"<span style='font-size: {EMPTY_DATA_FONT_SIZE}px; "
+                    f"font-weight: 400;'>{EMPTY_DATA_MESSAGE}</span>"
+                ),
+                x=0.5,
+                y=0.5,
+                xref="paper",
+                yref="paper",
+                showarrow=False,
+                font=dict(
+                    family=PLOTLY_FONT_FAMILY,
+                    size=EMPTY_DATA_FONT_SIZE,
+                    color=PLOTLY_FONT_COLOR_LIGHT,
+                ),
+                xanchor="center",
+                yanchor="middle",
+            )
+        ],
+        dragmode=False,
+        font=dict(family=PLOTLY_FONT_FAMILY, size=EMPTY_DATA_FONT_SIZE),
+        margin=dict(l=0, r=0, t=0, b=0),
+        paper_bgcolor="rgba(255,255,255,255)",
+        plot_bgcolor="rgba(255,255,255,255)",
+        showlegend=False,
+        xaxis=dict(
+            fixedrange=True,
+            showgrid=False,
+            showticklabels=False,
+            visible=False,
+            zeroline=False,
+        ),
+        yaxis=dict(
+            fixedrange=True,
+            showgrid=False,
+            showticklabels=False,
+            visible=False,
+            zeroline=False,
+        ),
+    )
+    return set_plotly_download_filename(fig, title)
 
 def csv_download_filename(title):
     return f"{slugify_download_title(title) or 'eeud-data'}.csv"
@@ -1133,7 +1184,7 @@ def explore_eeud_filtered():
 @render.download(
     label=download_button_label("Download Chart Data"),
     filename=lambda: csv_download_filename(
-        f"Stationary Energy Usage {input.explore_left_node()} by {input.explore_right_node()} {input.explore_period()}"
+        f"Energy Usage for {input.explore_period()} - {input.explore_left_node()} by {input.explore_right_node()}"
     )
 )
 async def download_explore_filtered_data():
@@ -1178,7 +1229,7 @@ def render_sankey_button():
     btn_class = 'btn-primary' if explore_chart_type.get() == 'Sankey' else 'btn-secondary'
     return ui.input_action_button(
         "explore_sankey",
-        chart_type_button_label("sankey", "Sankey"),
+        chart_type_button_label("sankey", "Alluvial"),
         class_=btn_class
     )
 
@@ -1201,12 +1252,19 @@ def display_explore_chart():
     left_node = title_case(input.explore_left_node())
     right_node = title_case(input.explore_right_node())
     explore_df = explore_eeud_filtered()
+    chart_title = f"Stationary Energy Usage {left_node} to {right_node} {input.explore_period()}"
+
+    if explore_df.empty:
+        return empty_data_figure(chart_title)
     
     if left_node == right_node:
         explore_df['Proxy'] = 'Total Energy Use'
         right_node = 'Proxy'
 
     explore_df = explore_df.groupby([left_node, right_node]).sum(numeric_only=True).reset_index(drop=False)
+
+    if explore_df.empty:
+        return empty_data_figure(chart_title)
 
     if explore_chart_type.get() == 'Sankey':
         
@@ -1342,7 +1400,7 @@ def timeseries_eeud_filtered():
 @render.download(
     label=download_button_label("Download Chart Data"),
     filename=lambda: csv_download_filename(
-        f"Energy Usage Time Series {input.timeseries_category()} {input.timeseries_display()}"
+        f"Energy Usage Time Series - {input.timeseries_category()} {input.timeseries_display()}"
     )
 )
 async def download_timeseries_filtered_data():
@@ -1398,7 +1456,17 @@ timeseries_chart_type = reactive.value('Line')
 @render_widget
 def display_timeseries_chart():
     category = title_case(input.timeseries_category())
-    timeseries_df = timeseries_eeud_filtered().groupby([category, 'Period']).sum(numeric_only=True).reset_index(drop=False)
+    filtered_df = timeseries_eeud_filtered()
+    chart_title = f"Energy Usage Time Series {category} {input.timeseries_display()}"
+
+    if filtered_df.empty:
+        return empty_data_figure(chart_title)
+
+    timeseries_df = filtered_df.groupby([category, 'Period']).sum(numeric_only=True).reset_index(drop=False)
+
+    if timeseries_df.empty:
+        return empty_data_figure(chart_title)
+
     total = True
     if input.timeseries_display() == "Proportional":
         total = False
@@ -1407,7 +1475,7 @@ def display_timeseries_chart():
         timeseries_df['TJ'] = (timeseries_df['TJ'] / timeseries_df['TotalTJ']) * 100
 
     if timeseries_chart_type.get() == 'Alluvial':
-        timeseries_links, timeseries_nodes = create_alluvial_links_for_dict(timeseries_eeud_filtered(), category, 'PeriodEndDate')
+        timeseries_links, timeseries_nodes = create_alluvial_links_for_dict(filtered_df, category, 'PeriodEndDate')
         fig = go.Figure(data=[go.Sankey(
             arrangement="fixed",
             node = dict(
@@ -1572,9 +1640,21 @@ async def download_data_filtered_data():
 
 ### Column
 
-```{python} 
+```{python}
+#| include: false
 @render.data_frame
-def dataview():
+def dataview_grid():
     data = build_data_grid_download_data()
     return render.DataGrid(data, width="100%", summary=False)
+```
+
+```{python} 
+@render.ui
+def dataview():
+    data = data_eeud_filtered()
+
+    if data.empty:
+        return empty_data_message()
+
+    return ui.output_data_frame("dataview_grid")
 ```

@@ -494,13 +494,32 @@ shiny-data-frame {
     }
 }
 
-.card-toolbar .cell-output-display:has(#render_explore_title),
+.card-toolbar .cell-output-display:has(#render_explore_title) {
+    align-items: flex-start !important;
+    align-self: flex-start !important;
+    display: flex !important;
+    flex: 1 1 auto;
+    height: auto !important;
+    min-width: 0 !important;
+}
+
 #render_explore_title {
-    display: contents !important;
+    align-items: flex-start !important;
+    align-self: flex-start !important;
+    display: flex !important;
+    flex: 1 1 auto;
+    height: auto !important;
+    min-width: 0 !important;
+    width: auto !important;
 }
 
 #render_explore_title > .card-title {
+    align-self: flex-start !important;
     margin-top: 0.1em;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* Overview toolbar */
@@ -892,12 +911,40 @@ $slider-selected-color: $sky-blue-light;
     width: 100% !important;
 
     &:hover,
-    &:focus,
     &:focus-visible {
         background-color: $secondary !important;
         border-left-color: $secondary !important;
         box-shadow: none !important;
         color: $sea-blue !important;
+        outline: 0 !important;
+    }
+
+    &:focus:not(:focus-visible) {
+        outline: 0 !important;
+    }
+
+    &.disabled,
+    &.download-button-disabled,
+    &[aria-disabled="true"] {
+        background-color: $silver !important;
+        border-left-color: transparent !important;
+        box-shadow: inset 0 -1px 0 0 $secondary !important;
+        color: $control-placeholder !important;
+        cursor: default !important;
+        pointer-events: auto !important;
+    }
+
+    &.disabled:hover,
+    &.disabled:focus-visible,
+    &.download-button-disabled:hover,
+    &.download-button-disabled:focus-visible,
+    &[aria-disabled="true"]:hover,
+    &[aria-disabled="true"]:focus-visible {
+        background-color: $silver !important;
+        border-left-color: transparent !important;
+        box-shadow: inset 0 -1px 0 0 $secondary !important;
+        color: $control-placeholder !important;
+        cursor: default !important;
         outline: 0 !important;
     }
 }
